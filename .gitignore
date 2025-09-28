@@ -1,0 +1,21 @@
+# Temporarily ignore old configuration files
+oldfiles/
+
+# Environment files
+.env
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Backup directories
+.config_backup_*
+
+# Test outputs
+test_*
