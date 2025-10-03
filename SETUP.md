@@ -18,15 +18,15 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 ### 4. Text Editing & IDE
 - **Neovim** - Modern vim-based editor, core of the development environment
 - **LazyVim** - Neovim configuration with sane defaults and extensive plugin ecosystem
-- **AstroNvim** - Community-driven Neovim configuration with additional features
 
 ### 5. Terminal Multiplexing
 - **Tmux** - Terminal multiplexer, enables the multi-pane workspace layout
 - **Starship** - Cross-shell prompt with rich information display
 
-### 6. Terminal Applications
-- **Kitty** - GPU-accelerated terminal emulator with hotkey window support
-- **WezTerm** - Alternative terminal with advanced features and image protocol support
+### 6. Fonts & Theming
+- **Nerd Fonts** - Programming fonts with icons and symbols support
+- **FiraCode Nerd Font** - Primary font for editors and terminal
+- **Catppuccin Theme** - Consistent color scheme across all tools
 
 ## Phase 3: Productivity Tools
 
@@ -56,7 +56,6 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 - **Virtual Environments** - Separate venvs for each Neovim configuration:
   - `~/.venvs/nvim/` - Default Neovim Python provider
   - `~/.venvs/lazyvim/` - LazyVim Python provider
-  - `~/.venvs/astronvim/` - AstroNvim Python provider
 - **pynvim** - Python client for Neovim (installed in each venv)
 
 ### 12. Node.js Environment
@@ -74,12 +73,12 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 ### 14. Java Environment
 - **OpenJDK** - Java development kit
 
-### 15. Additional Languages
-- **Rust** - Systems programming language
-- **Go** - Google's programming language
-- **Fish** - Alternative shell (for certain Neovim plugins)
-- **PHP & Composer** - PHP language and package manager
-- **Julia** - Scientific computing language
+### 15. Additional Languages (LazyVim Dependencies)
+- **Rust** - Systems programming language (LSP and tool support)
+- **Go** - Google's programming language (LSP and tool support)
+- **Fish** - Alternative shell (required by some LazyVim plugins for enhanced terminal features)
+- **PHP & Composer** - PHP language and package manager (LazyVim LSP support)
+- **Julia** - Scientific computing language (LazyVim LSP support)
 
 ### 16. Perl Environment
 - **Perl** - Perl language runtime
@@ -91,52 +90,42 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 
 ## Phase 5: Development Dependencies
 
-### 17. Build & Analysis Tools
-- **ast-grep** - Structural search and replace tool
-- **luarocks** - Lua package manager (for Neovim plugins)
+### 17. Build & Analysis Tools (LazyVim Dependencies)
+- **ast-grep** - Structural search and replace tool (LazyVim syntax parsing and refactoring)
+- **luarocks** - Lua package manager (for Neovim Lua plugins)
 
-### 18. Document Processing
-- **ghostscript** - PostScript and PDF interpreter
-- **tectonic** - Modern TeX/LaTeX engine
+### 18. Document Processing (LazyVim Dependencies)
+- **ghostscript** - PostScript and PDF interpreter (LazyVim document rendering/preview)
+- **tectonic** - Modern TeX/LaTeX engine (LazyVim LaTeX document compilation)
 
 ### 19. Font Support
 - **fontconfig** - Font configuration library
 
-## Phase 6: Automation & Productivity
+## Phase 6: Configuration Packages (via Stow)
 
-### 20. macOS Automation
-- **Hammerspoon** - macOS automation tool for hotkeys and window management
-  - Provides double-tap hotkeys (Cmd-Cmd, Alt-Alt, Ctrl-Ctrl)
-  - Fallback hotkey: Cmd+Shift+Space
-  - Requires accessibility permissions
+### 20. Shell Configuration
+- **shell package** - `.bashrc`, `.bash_profile`, `.bash_aliases`, `.bash_functions`
+- **PATH management** - Dedicated `.bash_path` file for all PATH modifications
+- **bin scripts** - Custom utility scripts
 
-## Phase 7: Configuration Packages (via Stow)
+### 21. Application Configurations
+- **starship package** - Prompt configuration with Catppuccin theme
+- **tmux package** - Terminal multiplexer settings with Catppuccin theme
+- **git package** - Git configuration and aliases
 
-### 21. Shell Configuration
-- **bash package** - `.bashrc`, `.bash_profile`, `.bash_aliases`, `.bash_functions`
-- **bin scripts** - Custom utility scripts including `kitty-hotkey`
-
-### 22. Application Configurations
-- **starship package** - Prompt configuration
-- **tmux package** - Terminal multiplexer settings
-- **kitty package** - Terminal emulator configuration
-- **wezterm package** - Alternative terminal configuration
-- **hammerspoon package** - macOS automation scripts
-
-### 23. Editor Configurations
+### 22. Editor Configurations
 - **nvim package** - Default Neovim configuration
-- **lazyvim package** - LazyVim-specific settings and customizations
-- **astronvim package** - AstroNvim-specific settings and customizations
+- **lazyvim package** - LazyVim-specific settings and customizations with Catppuccin theme
 
-## Phase 8: LLM Integration (Future)
+## Phase 7: LLM Integration (Future)
 
-### 24. LLM CLI Tools (To be added)
+### 23. LLM CLI Tools (To be added)
 - **Claude Code CLI** - Anthropic's CLI interface
 - **OpenAI CLI** - OpenAI's command-line interface
 - **Gemini CLI** - Google's Gemini CLI interface
 - **Other LLM CLIs** - Additional chat interfaces as they become available
 
-### 25. Custom Workspace Tools (To be added)
+### 24. Custom Workspace Tools (To be added)
 - **tmux-llm-workspace** - Custom tmux session for LLM workflow
 - **nvim-prompt-buffer** - Prompt management utilities
 - **tmux-pane-pipe** - Scripts for piping between tmux panes
@@ -167,15 +156,14 @@ Each tool installation includes validation steps:
 
 ### Manual Steps
 1. **Restart terminal** or source `~/.bash_profile`
-2. **Grant accessibility permissions** to Hammerspoon
+2. **Configure existing settings import** during stow
 3. **Configure API keys** in `.env` file
 4. **Test Neovim configurations**:
    - `nvim` - Default configuration
    - `lazyvim` - LazyVim configuration
-   - `astrovim` - AstroNvim configuration
 
 ### Health Checks
 - Run `:checkhealth` in each Neovim configuration
 - Test tmux session creation and restoration
-- Verify terminal hotkey functionality
+- Verify font installation and Catppuccin theming
 - Confirm all language providers are working

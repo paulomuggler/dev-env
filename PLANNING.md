@@ -32,27 +32,34 @@
 
 #### 1.3 Configuration Packages (Stow)
 - [ ] `dotfiles/shell/` - Bash configuration package
-  - [ ] Import from oldfiles: `.bashrc`, `.bash_profile`, `.bash_aliases`, `.bash_functions`
+  - [ ] Parse and import from oldfiles (not straight copy - extract tool-specific settings)
+  - [ ] Create dedicated `.bash_path` file for all PATH modifications
+  - [ ] Distribute tool-specific configs to appropriate packages (e.g., starship settings)
   - [ ] Add XDG compliance and environment variables
   - [ ] Include custom bin scripts
 - [ ] `dotfiles/git/` - Git configuration package
-- [ ] `dotfiles/starship/` - Prompt configuration package
+- [ ] `dotfiles/starship/` - Prompt configuration package with Catppuccin theme
 
-#### 1.4 Basic Neovim Setup
+#### 1.4 Fonts & Theming Setup
+- [ ] `install-scripts/install-fonts.sh` - Install Nerd Fonts (FiraCode Nerd Font)
+- [ ] Configure Catppuccin theme across all tools
+- [ ] Font configuration for terminal and editors
+
+#### 1.5 Basic Neovim Setup
 - [ ] `install-scripts/install-neovim.sh` - Neovim and language providers
 - [ ] `dotfiles/nvim/` - Default Neovim configuration package
-- [ ] `dotfiles/lazyvim/` - LazyVim configuration package
-- [ ] `dotfiles/astronvim/` - AstroNvim configuration package
-- [ ] Python venv setup for each configuration
+- [ ] `dotfiles/lazyvim/` - LazyVim configuration package with Catppuccin theme
+- [ ] Python venv setup for each configuration (nvim, lazyvim only)
+- [ ] Handle existing config import gracefully
 
-#### 1.5 Main Orchestrator
+#### 1.6 Main Orchestrator
 - [ ] `setup.sh` - Main script that coordinates all installations
   - [ ] Progress tracking and clear output
   - [ ] Error handling and rollback capabilities
   - [ ] Dependency order management
   - [ ] Platform detection
 
-#### 1.6 Testing & Validation
+#### 1.7 Testing & Validation
 - [ ] Test on clean macOS environment
 - [ ] Validate idempotency (safe re-run)
 - [ ] Verify all tools work after installation
@@ -70,12 +77,10 @@
   - [ ] Session management utilities
 - [ ] Research and document useful tmux plugins
 
-#### 2.2 Terminal Setup
-- [ ] `install-scripts/install-terminals.sh` - Kitty and WezTerm
-- [ ] `dotfiles/kitty/` - Kitty configuration package
-- [ ] `dotfiles/wezterm/` - WezTerm configuration package
-- [ ] `install-scripts/install-hammerspoon.sh` - macOS automation
-- [ ] `dotfiles/hammerspoon/` - Hammerspoon configuration package
+#### 2.2 Terminal Enhancement (iTerm2 focused)
+- [ ] iTerm2 configuration and optimization
+- [ ] Terminal keybinding setup
+- [ ] Integration with tmux workflow
 
 #### 2.3 LLM CLI Tools
 - [ ] Research available LLM CLI chat clients
@@ -133,7 +138,10 @@
 5. **Create first stow package** - Start with shell configuration
 
 ### Dependencies & Blockers
-- **Bash library choice**: Need to decide on bashlog vs custom implementation
+- **Bash library choice**: Use bashlog based on research
+- **Configuration parsing**: Need strategy for extracting tool-specific settings from oldfiles
+- **PATH management**: Implement dedicated .bash_path file approach
+- **Existing config handling**: Develop graceful import strategy for stow conflicts
 - **Tmux plugins**: Research needed for plugin recommendations
 - **LLM CLI availability**: Need to survey current LLM CLI options
 - **Testing environment**: May need clean macOS VM or container for testing
@@ -143,7 +151,7 @@
 #### Phase 1 Complete When:
 - [ ] Fresh macOS system can run `./setup.sh` and get working dev environment
 - [ ] All tools listed in SETUP.md are properly installed and configured
-- [ ] Neovim configurations (default, LazyVim, AstroNvim) all work correctly
+- [ ] Neovim configurations (default, LazyVim) all work correctly
 - [ ] Stow packages correctly manage all dotfiles
 - [ ] Setup is idempotent and can be safely re-run
 
@@ -179,7 +187,12 @@
 - **Platform**: macOS first, future platforms TBD
 - **Package manager**: Homebrew ecosystem
 - **Shell**: Bash (not zsh)
+- **Terminal**: iTerm2 (not Kitty/WezTerm for now)
+- **Editor**: Neovim with LazyVim (not AstroNvim for now)
+- **Theme**: Catppuccin across all tools
+- **Font**: FiraCode Nerd Font
 - **Configuration management**: GNU Stow with dot_ notation
+- **PATH management**: Dedicated .bash_path file
 - **Logging**: Bashlog library for lightweight logging
 - **Architecture**: Modular scripts with shared utilities
 

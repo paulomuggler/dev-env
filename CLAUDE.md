@@ -151,14 +151,48 @@ devenv/
 - Use `XDG_CONFIG_HOME` and related standards
 - Maintain clean, tool-agnostic variable management
 
+## Adding New Tools - Complete Workflow
+
+When adding any new tool to DevEnv, follow this complete workflow:
+
+### 1. Research & Selection
+- **Evaluate the tool**: Does it serve a clear purpose? Is it actively maintained?
+- **Check dependencies**: What other tools/libraries does it require?
+- **Assess configuration**: Can it use XDG directories? Does it support theming?
+- **Document decision**: Add justification to tool selection (e.g., "LazyVim dependency for LSP support")
+
+### 2. Create Installation Script
+- **Create**: `install-scripts/install-[tool].sh`
+- **Follow patterns**: Use shared utilities from `libs/` for consistent output/error handling
+- **Implement validation**: Check if installation needed, install, verify with `--version` or basic test
+- **Handle dependencies**: Ensure prerequisite tools are installed first
+- **Return proper exit codes**: Enable orchestration script to handle errors
+
+### 3. Configuration Management
+- **Create stow package**: `dotfiles/[tool]/` with proper `dot_` filename conventions
+- **Apply theming**: Use Catppuccin color scheme where possible
+- **Set fonts**: Use FiraCode Nerd Font as primary font choice
+- **Follow XDG**: Place configs in `~/.config/[tool]/` when supported
+- **Handle existing configs**: Import existing user configurations gracefully
+
+### 4. Documentation & Integration
+- **Update SETUP.md**: Add tool to appropriate phase with clear description and justification
+- **Create package README**: `dotfiles/[tool]/README.md` documenting key settings and customizations
+- **Update main orchestrator**: Add to `setup.sh` in correct dependency order
+- **Document PATH changes**: Add any PATH modifications to dedicated `.bash_path` file
+
+### 5. Validation & Testing
+- **Test installation**: Verify on clean environment if possible
+- **Test idempotency**: Ensure safe re-run when tool already installed
+- **Test configuration**: Verify stow package applies correctly and tool uses new config
+- **Test integration**: Ensure tool works with existing workflow (tmux, nvim, etc.)
+
+### 6. Maintenance Considerations
+- **Version pinning**: Consider if specific versions needed for stability
+- **Update strategy**: How will tool updates be handled?
+- **Removal strategy**: How to cleanly remove if no longer needed?
+- **Backup strategy**: How to preserve user customizations during updates?
+
 ## Contributing
 
-When adding new tools or features:
-1. Create modular install script in `install-scripts/`
-2. Add stow package in `dotfiles/[tool]/`
-3. Include README.md with package documenting key settings
-4. Update SETUP.md with tool description
-5. Use shared utilities from `libs/` for consistency
-6. Test on clean environment when possible
-
-Focus on maintainability, clear documentation, and preserving the modular architecture.
+Focus on maintainability, clear documentation, and preserving the modular architecture. Each tool addition should follow the complete workflow above to ensure consistency and reliability across the development environment.
