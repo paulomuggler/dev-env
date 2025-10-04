@@ -4,6 +4,12 @@ This document provides guidelines and best practices for developing shell script
 
 ## Style Guide
 
+### Shebang Line
+**Always use `#!/usr/bin/env bash`** as the first line of every script:
+- Finds bash in PATH (uses Homebrew bash 5+ on macOS, not system bash 3.2)
+- Ensures associative arrays and modern bash features work
+- Portable across different systems
+
 ### Follow Google Shell Style Guide
 Adhere to the **[Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)** for:
 - Naming conventions (lowercase with underscores for functions/variables)
