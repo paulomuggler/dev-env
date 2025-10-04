@@ -1,0 +1,15 @@
+[submodule "libs/bashlog"]
+	path = libs/bashlog
+	url = https://github.com/Zordrak/bashlog.git
+[submodule "libs/bats/bats-core"]
+	path = libs/bats/bats-core
+	url = https://github.com/bats-core/bats-core.git
+[submodule "libs/bats/bats-support"]
+	path = libs/bats/bats-support
+	url = https://github.com/bats-core/bats-support.git
+[submodule "libs/bats/bats-assert"]
+	path = libs/bats/bats-assert
+	url = https://github.com/bats-core/bats-assert.git
+[submodule "libs/bats/bats-file"]
+	path = libs/bats/bats-file
+	url = https://github.com/bats-core/bats-file.git
