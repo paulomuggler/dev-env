@@ -16,7 +16,7 @@ This is a terminal-based development environment bootstrapping utility that crea
 - **GNU Stow for dotfiles**: All configurations managed via stow packages
 - **XDG compliance**: Use `~/.config` and XDG standards whenever possible
 - **Compartmentalization**: Separate stow package per concern (shell, tmux, nvim, git, etc.)
-- **Dot-prefix notation**: Use stow's `dot_` filename convention
+- **Dot-prefix notation**: Use stow's `dot-` filename convention (requires --dotfiles flag)
 - **Existing config import**: Graceful handling of pre-existing configurations
 
 ### 3. Output & Error Handling
@@ -219,7 +219,7 @@ When adding any new tool to DevEnv, follow this complete workflow:
 - **Return proper exit codes**: Enable orchestration script to handle errors
 
 ### 3. Configuration Management
-- **Create stow package**: `dotfiles/[tool]/` with proper `dot_` filename conventions
+- **Create stow package**: `dotfiles/[tool]/` with proper `dot-` filename conventions
 - **Apply theming**: Use Catppuccin color scheme where possible
 - **Set fonts**: Use FiraCode Nerd Font as primary font choice
 - **Follow XDG**: Place configs in `~/.config/[tool]/` when supported

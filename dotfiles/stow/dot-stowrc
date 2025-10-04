@@ -1,0 +1,5 @@
+# GNU Stow Configuration
+# Enables dot-prefix notation: files named "dot-bashrc" become ".bashrc" after stowing
+# Note: This is automatically added by our stow_package() function, but kept here for manual stow usage
+
+--dotfiles

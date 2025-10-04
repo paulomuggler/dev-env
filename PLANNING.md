@@ -134,7 +134,7 @@
 1. **Create directory structure** - Set up `install-scripts/`, `libs/`, `dotfiles/`
 2. **Implement shared utilities** - Start with logger.sh using bashlog research
 3. **Create first install script** - Begin with install-homebrew.sh as foundation
-4. **Set up stow configuration** - Create .stowrc with dot_ notation
+4. **Set up stow configuration** - Create .stowrc with --dotfiles flag for dot- notation
 5. **Create first stow package** - Start with shell configuration
 
 ### Dependencies & Blockers
@@ -191,7 +191,7 @@
 - **Editor**: Neovim with LazyVim (not AstroNvim for now)
 - **Theme**: Catppuccin across all tools
 - **Font**: FiraCode Nerd Font
-- **Configuration management**: GNU Stow with dot_ notation
+- **Configuration management**: GNU Stow with dot- notation (--dotfiles flag)
 - **PATH management**: Dedicated .bash_path file
 - **Logging**: Bashlog library for lightweight logging
 - **Architecture**: Modular scripts with shared utilities

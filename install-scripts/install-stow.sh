@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------------------------------
+# GNU Stow Installation Script
+# Installs GNU Stow via Homebrew and applies its configuration
+# -----------------------------------------------------------------------------
+
+set -euo pipefail  # Exit on error, undefined vars, pipe failures
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source utility functions (loads bashlog, bash-utility)
+source "${SCRIPT_DIR}/../libs/utils.sh"
+
+# -----------------------------------------------------------------------------
+# Main Installation Function
+# -----------------------------------------------------------------------------
+
+install_stow() {
+  log info "=== Installing GNU Stow ==="
+
+  # Check if already installed
+  if ! check_installed stow; then
+    # Dry-run check
+    if dry_run_report "Would install stow via brew"; then
+      return 0
+    fi
+
+    # Install via Homebrew
+    log info "Installing stow via Homebrew..."
+    if brew install stow; then
+      report_changed "GNU Stow installed successfully"
+    else
+      report_failed "Failed to install stow via brew"
+      return 1
+    fi
+
+    # Verify installation
+    if ! check_installed stow; then
+      report_failed "Stow installation verification failed"
+      return 1
+    fi
+  fi
+
+  # Stow the stow configuration
+  # Note: Since stow_package() already handles --dotfiles, we can use it directly
+  log info "Applying stow configuration..."
+  if ! stow_package "stow"; then
+    report_failed "Failed to apply stow configuration"
+    return 1
+  fi
+
+  return 0
+}
+
+# -----------------------------------------------------------------------------
+# Script Entry Point
+# -----------------------------------------------------------------------------
+
+# Ensure we're on macOS
+if ! is_macos; then
+  report_failed "This script currently only supports macOS"
+  exit 1
+fi
+
+# Ensure Homebrew is available
+if ! check::command_exists brew; then
+  report_failed "Homebrew is required but not installed. Please run install-homebrew.sh first"
+  exit 1
+fi
+
+# Run installation
+install_stow
+exit_code=$?
+
+if [[ ${exit_code} -eq 0 ]]; then
+  log info "=== Stow installation complete ==="
+else
+  log error "=== Stow installation failed ==="
+fi
+
+exit "${exit_code}"
