@@ -19,8 +19,11 @@ Adhere to the **[Google Shell Style Guide](https://google.github.io/styleguide/s
 **Run [ShellCheck](https://www.shellcheck.net/) regularly** before committing:
 
 ```bash
-shellcheck install-scripts/*.sh libs/utils.sh
+# Use -x to follow source directives
+shellcheck -x install-scripts/*.sh libs/utils.sh
 ```
+
+**Important**: Always use `-x` flag to enable following source directives. This catches errors in sourced files too.
 
 **Benefits:**
 - Catches common bugs and anti-patterns
@@ -31,7 +34,7 @@ shellcheck install-scripts/*.sh libs/utils.sh
 ```bash
 # .git/hooks/pre-commit
 #!/bin/bash
-shellcheck install-scripts/*.sh libs/utils.sh || exit 1
+shellcheck -x install-scripts/*.sh libs/utils.sh || exit 1
 ```
 
 ### Manual Testing Approach
