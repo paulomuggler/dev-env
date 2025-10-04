@@ -6,11 +6,24 @@
 # This file provides project-specific utilities that leverage:
 # - bashlog (libs/bashlog/log.sh): Logging functionality
 # - colr.sh (libs/colr/): Terminal colors (when needed beyond bashlog)
+# - bash-utility (libs/bash-utility/): Bash standard library functions
 # -----------------------------------------------------------------------------
 
-# Source bashlog for logging capabilities
+# Get script directory and source libraries
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Source bashlog for logging capabilities
 source "${SCRIPT_DIR}/bashlog/log.sh"
+
+# Source bash-utility for standard library functions
+# Note: bash_utility.sh uses relative paths, so cd into its directory first
+(
+    cd "${SCRIPT_DIR}/bash-utility" || exit 1
+    source bash_utility.sh
+) || {
+    log error "Failed to source bash-utility library"
+    exit 1
+}
 
 # -----------------------------------------------------------------------------
 # State Reporting Functions (Ansible-inspired)
