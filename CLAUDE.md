@@ -121,6 +121,40 @@ devenv/
 - Return proper exit codes
 - Test basic functionality after installation
 
+#### State-Based Execution (Ansible-Inspired Patterns)
+Scripts should adopt these patterns for clarity and idempotency:
+
+**State Reporting**: Each operation should report one of these states:
+- **CHANGED**: Tool was installed or configuration was modified
+- **OK**: Already in desired state, no action needed
+- **SKIPPED**: Intentionally skipped due to conditions
+- **FAILED**: Operation failed with error
+
+**Skip Detection**: Explicitly check and report when operations are unnecessary:
+```bash
+if command_exists nvim; then
+    log_ok "Neovim already installed ($(nvim --version | head -n1))"
+    return 0
+fi
+```
+
+**Dry-Run Support**: Consider implementing `--dry-run` or `--check` flag:
+```bash
+if [[ "${DRY_RUN:-false}" == "true" ]]; then
+    log_info "[DRY-RUN] Would install neovim via brew"
+    return 0
+fi
+```
+
+**Utility Functions**: Implement in `libs/utils.sh`:
+```bash
+report_changed()  # Something was installed/modified
+report_ok()       # Already in desired state
+report_skipped()  # Intentionally skipped
+report_failed()   # Operation failed
+check_installed() # Verify tool exists and return state
+```
+
 ### Configuration Standards
 - Follow XDG directory conventions
 - Document important settings in package READMEs
