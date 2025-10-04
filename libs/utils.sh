@@ -1,11 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # -----------------------------------------------------------------------------
 # DevEnv Utility Functions
 #
 # Project-specific utilities that extend included libraries:
 # - bashlog (libs/bashlog/): Logging functionality
 # - bash-utility (libs/bash-utility/): Bash standard library
-# - colr.sh (libs/colr/): Terminal colors
 #
 # This file provides ONLY functions not available in the above libraries.
 # -----------------------------------------------------------------------------
@@ -17,42 +16,36 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/bashlog/log.sh"
 
 # Source bash-utility for standard library functions
-# Note: bash_utility.sh uses relative paths, must cd into directory
+# Source each module with absolute paths
+BASH_UTILITY_DIR="${SCRIPT_DIR}/bash-utility"
 # shellcheck disable=SC1091
-(
-    cd "${SCRIPT_DIR}/bash-utility" || exit 1
-    source bash_utility.sh
-) || {
-    log error "Failed to source bash-utility library"
-    exit 1
-}
-
-# Source colr.sh for terminal colors
-source "${SCRIPT_DIR}/colr/colr.sh"
+for module in "${BASH_UTILITY_DIR}"/src/*.sh; do
+    source "${module}"
+done
 
 # -----------------------------------------------------------------------------
 # State Reporting Functions (Ansible-inspired)
-# These wrap bashlog with consistent state indicators
+# Using bashlog's built-in colors
 # -----------------------------------------------------------------------------
 
 # Report that a change was made (installation, configuration update, etc.)
 report_changed() {
-    log info "$(colr "✓ CHANGED:" --green) $1"
+    log info "✓ CHANGED: $1"
 }
 
 # Report that the desired state already exists
 report_ok() {
-    log info "$(colr "✓ OK:" --blue) $1"
+    log info "✓ OK: $1"
 }
 
 # Report that an operation was intentionally skipped
 report_skipped() {
-    log warn "$(colr "⊘ SKIPPED:" --yellow) $1"
+    log warn "⊘ SKIPPED: $1"
 }
 
 # Report that an operation failed
 report_failed() {
-    log error "$(colr "✗ FAILED:" --red) $1"
+    log error "✗ FAILED: $1"
     return 1
 }
 
