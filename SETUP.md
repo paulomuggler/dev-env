@@ -35,6 +35,7 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 - **ripgrep** - Fast text search tool, better than grep
 - **fd** - Fast file finder, better than find
 - **tree** - Display directory structure in tree format
+- **jq** - Command-line JSON processor for parsing and formatting
 - **exa** - Modern replacement for ls with colors and git integration
 - **bat** - Cat clone with syntax highlighting and git integration
 - **yazi** - Terminal file manager
