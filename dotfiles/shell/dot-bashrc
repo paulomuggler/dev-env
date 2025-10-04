@@ -1,0 +1,62 @@
+# -----------------------------------------------------------------------------
+# .BASHRC
+#
+# Executed by interactive shells. This file configures the shell prompt,
+# tools, and sources aliases and functions.
+# -----------------------------------------------------------------------------
+
+# Load custom environment variables (if not using .env file)
+if [[ -f ~/.bash_env ]]; then
+  source ~/.bash_env
+fi
+
+# Load custom aliases
+if [[ -f ~/.bash_aliases ]]; then
+  source ~/.bash_aliases
+fi
+
+# Load custom functions
+if [[ -f ~/.bash_functions ]]; then
+  source ~/.bash_functions
+fi
+
+# -----------------------------------------------------------------------------
+# SHELL & TOOL INITIALIZATION
+# NOTE: These will eventually move to their respective tool stow packages
+# -----------------------------------------------------------------------------
+
+# Initialize Starship for a custom prompt.
+# TODO: Move to dotfiles/starship/ when starship install script is created
+if command -v starship &> /dev/null; then
+  eval "$(starship init bash)"
+fi
+
+# Set up fzf (fuzzy finder) key bindings and fuzzy completion.
+# TODO: Move to dotfiles/fzf/ when fzf install script is created
+if command -v fzf &> /dev/null; then
+  eval "$(fzf --bash)"
+fi
+
+# Initialize zoxide, a "smarter cd" command.
+# TODO: Move to dotfiles/zoxide/ when zoxide install script is created
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init bash)"
+fi
+
+# Initialize Homebrew's bash completion.
+if [[ -r /opt/homebrew/etc/profile.d/bash_completion.sh ]]; then
+  source /opt/homebrew/etc/profile.d/bash_completion.sh
+fi
+
+# Link the 'set_win_title' function to Starship's pre-command hook
+# to automatically update the terminal window title.
+starship_precmd_user_func="set_win_title"
+
+# -----------------------------------------------------------------------------
+# MISC & USER-SPECIFIC
+# -----------------------------------------------------------------------------
+
+# Source iTerm2 shell integration if it exists.
+if [[ -f "${HOME}/.iterm2_shell_integration.bash" ]]; then
+  source "${HOME}/.iterm2_shell_integration.bash"
+fi

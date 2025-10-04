@@ -1,0 +1,42 @@
+# -----------------------------------------------------------------------------
+# .BASH_PROFILE
+#
+# Executed by login shells. This file sets up the environment and then
+# sources .bashrc to configure the shell itself.
+# -----------------------------------------------------------------------------
+
+# Silence the "default interactive shell is now zsh" warning on macOS.
+export BASH_SILENCE_DEPRECATION_WARNING=1
+
+# -----------------------------------------------------------------------------
+# ENVIRONMENT VARIABLES
+# -----------------------------------------------------------------------------
+
+# Set the default locale.
+export LANG=en_US.UTF-8
+
+# Set the terminal type. Important for colors and compatibility.
+export TERM=xterm-256color
+
+# Configure fzf's Ctrl+R preview window.
+# TODO: Move to dotfiles/fzf/ when fzf install script is created
+export FZF_CTRL_R_OPTS="--preview 'echo {}' --height=40% --border"
+
+# -----------------------------------------------------------------------------
+# PATH CONFIGURATION
+#
+# Source .bash_path which contains all PATH modifications from installed tools
+# -----------------------------------------------------------------------------
+
+if [[ -f ~/.bash_path ]]; then
+  source ~/.bash_path
+fi
+
+# -----------------------------------------------------------------------------
+# SOURCE .BASHRC
+#
+# Finally, load the interactive shell configuration.
+# -----------------------------------------------------------------------------
+if [[ -f ~/.bashrc ]]; then
+  source ~/.bashrc
+fi

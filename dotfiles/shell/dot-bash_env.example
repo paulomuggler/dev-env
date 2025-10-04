@@ -1,0 +1,17 @@
+# -----------------------------------------------------------------------------
+# .BASH_ENV (EXAMPLE)
+#
+# Environment variables and API keys. Copy this to ~/.bash_env and fill in
+# your actual values. This file is sourced by .bashrc.
+#
+# IMPORTANT: Never commit the actual .bash_env file with real secrets!
+# -----------------------------------------------------------------------------
+
+# Example: Gemini API Key
+# export GEMINI_API_KEY="your-api-key-here"
+
+# Example: OpenAI API Key
+# export OPENAI_API_KEY="your-api-key-here"
+
+# Example: Claude/Anthropic API Key
+# export ANTHROPIC_API_KEY="your-api-key-here"

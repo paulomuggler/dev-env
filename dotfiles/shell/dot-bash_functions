@@ -1,0 +1,37 @@
+# -----------------------------------------------------------------------------
+# BASH FUNCTIONS
+#
+# Define reusable shell functions. This file is sourced by .bashrc.
+# -----------------------------------------------------------------------------
+
+# Cleanly extracts the name of the current Git branch.
+# Used for the shell prompt.
+git_branch() {
+  git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'
+}
+
+# Sets the terminal window title to the name of the current directory.
+# This is used by Starship's pre-command hook.
+set_win_title() {
+  echo -ne "\033]0; $(basename "$PWD") \007"
+}
+
+# Neovim configuration functions
+
+# Plain Neovim without any configuration
+# Uses minimal or no config for debugging/quick edits
+nvim_plain() {
+  # Option 1: Use a minimal config directory if it exists
+  if [[ -d "$HOME/.config/nvim-plain" ]]; then
+    NVIM_APPNAME=nvim-plain nvim "$@"
+  else
+    # Option 2: Start with no config (completely clean)
+    nvim --clean "$@"
+  fi
+}
+
+# LazyVim is the default - just use 'nvim' directly
+# Keeping this function for backward compatibility with existing aliases
+lazyvim_func() {
+  nvim "$@"
+}

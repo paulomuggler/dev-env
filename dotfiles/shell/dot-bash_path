@@ -1,0 +1,27 @@
+# ~/.bash_path
+# PATH modifications for development tools
+# This file is sourced by .bash_profile
+
+# User's local bin directory
+export PATH=~/bin:$PATH
+
+# Homebrew
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# rbenv (Ruby version manager)
+eval "$(rbenv init - bash)"
+
+# Windsurf/Codeium
+export PATH="/Users/paulomoreira/.codeium/windsurf/bin:$PATH"
+
+# .NET
+export PATH=$PATH:/usr/local/share/dotnet/
+
+# Ruby Gems
+export PATH="$(gem environment gemdir)/bin:$PATH"
+
+# Homebrew OpenJDK
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+
+# User's local bin
+export PATH="/Users/paulomoreira/.local/bin/:$PATH"

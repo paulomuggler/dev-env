@@ -1,0 +1,36 @@
+# -----------------------------------------------------------------------------
+# BASH ALIASES
+#
+# Define convenient command shortcuts. This file is sourced by .bashrc.
+# -----------------------------------------------------------------------------
+
+# More detailed 'ls' output.
+alias ll='ls -la'
+
+# git status shortcut
+alias stt='git status'
+
+# A better 'cat' with syntax highlighting (requires bat)
+alias cat='bat --paging=never'
+
+# Clear the terminal screen and scrollback buffer.
+alias cls='clear && printf "\033[3J"'
+
+# Open files in Sublime Text from the terminal.
+alias sublime="open -a Sublime\ Text"
+
+# Enable color support for 'ls' and distinguish file types.
+# This is a safe way to do it that works on different systems.
+if ls --color=always > /dev/null 2>&1; then
+  alias ls='ls -F --color=always'
+else
+  alias ls='ls -GF'
+fi
+
+# Neovim configuration aliases
+# LazyVim is the default, so 'nvim' uses LazyVim
+# For backward compatibility:
+alias lazyvim='nvim'
+
+# Plain nvim without any configuration (for debugging/quick edits)
+alias nvim-plain='nvim_plain'
