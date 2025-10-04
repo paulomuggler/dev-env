@@ -1,0 +1,77 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Git Installation Script
+# Installs Git via Homebrew and validates installation
+# -----------------------------------------------------------------------------
+
+set -e  # Exit on error
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Source utility functions (which sources bashlog)
+source "$PROJECT_ROOT/libs/utils.sh"
+
+# -----------------------------------------------------------------------------
+# Main Installation Function
+# -----------------------------------------------------------------------------
+
+install_git() {
+    log info "=== Installing Git ==="
+
+    # Check if already installed
+    if check_installed git; then
+        return 0
+    fi
+
+    # Dry-run check
+    if dry_run_report "Would install git via brew"; then
+        return 0
+    fi
+
+    # Install via Homebrew
+    log info "Installing git via Homebrew..."
+    if brew install git; then
+        report_changed "Git installed successfully"
+    else
+        report_failed "Failed to install git via brew"
+        return 1
+    fi
+
+    # Verify installation
+    if check_installed git; then
+        return 0
+    else
+        report_failed "Git installation verification failed"
+        return 1
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Script Entry Point
+# -----------------------------------------------------------------------------
+
+# Ensure we're on macOS
+if ! is_macos; then
+    report_failed "This script currently only supports macOS"
+    exit 1
+fi
+
+# Ensure Homebrew is available
+if ! command_exists brew; then
+    report_failed "Homebrew is required but not installed. Please run install-homebrew.sh first"
+    exit 1
+fi
+
+# Run installation
+install_git
+exit_code=$?
+
+if [[ $exit_code -eq 0 ]]; then
+    log info "=== Git installation complete ==="
+else
+    log error "=== Git installation failed ==="
+fi
+
+exit $exit_code

@@ -1,0 +1,33 @@
+[user]
+	email = pmugglerm@gmail.com
+	name = Paulo Muggler
+
+[core]
+	editor = nvim
+	excludesfile = ~/.gitignore_global
+
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path =
+
+[mergetool "sourcetree"]
+	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	visual = log --graph --oneline --all --decorate
+
+[color]
+	ui = auto
+
+[pull]
+	rebase = false
+
+[init]
+	defaultBranch = main
