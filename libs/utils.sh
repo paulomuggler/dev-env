@@ -176,8 +176,10 @@ stow_package() {
     fi
 
     # Check if we have any config files in the package already
+    # Look for either dot-* files (for dotfiles) or any files in .config/ (for XDG configs)
     local has_configs=false
-    if [[ -n "$(find "${package_dir}" -name 'dot-*' -type f)" ]]; then
+    if [[ -n "$(find "${package_dir}" -name 'dot-*' -type f)" ]] || \
+       [[ -n "$(find "${package_dir}/.config" -type f 2>/dev/null)" ]]; then
         has_configs=true
     fi
 
@@ -281,6 +283,113 @@ stow_package() {
 }
 
 # -----------------------------------------------------------------------------
+# PATH Management
+# Manages PATH additions in ~/.bash_path file
+# -----------------------------------------------------------------------------
+
+# Add a PATH entry to ~/.bash_path if not already present
+# Usage: add_to_path_file <description> <path_command> [command_to_check]
+# Example: add_to_path_file "Homebrew" 'eval "$(/opt/homebrew/bin/brew shellenv)"' "brew"
+add_to_path_file() {
+    local description="$1"
+    local path_command="$2"
+    local check_command="${3:-}"  # Optional: command to check if already in PATH
+    local bash_path_file="${HOME}/.bash_path"
+
+    # If check_command provided and already in PATH, skip unless already in .bash_path
+    if [[ -n "${check_command}" ]] && check::command_exists "${check_command}"; then
+        # Command is in PATH - only add to .bash_path if not already there
+        if [[ -f "${bash_path_file}" ]] && grep -qF "${path_command}" "${bash_path_file}"; then
+            log info "PATH entry for ${description} already exists in .bash_path"
+            return 0
+        else
+            log info "${check_command} already in PATH, ensuring .bash_path is consistent"
+        fi
+    fi
+
+    # Check if the command is already in the file
+    if [[ -f "${bash_path_file}" ]] && grep -qF "${path_command}" "${bash_path_file}"; then
+        log info "PATH entry for ${description} already exists in .bash_path"
+        return 0
+    fi
+
+    if dry_run_report "Would add ${description} to .bash_path"; then
+        return 0
+    fi
+
+    # Create file with header if it doesn't exist
+    if [[ ! -f "${bash_path_file}" ]]; then
+        cat > "${bash_path_file}" << 'EOF'
+# ~/.bash_path
+# PATH modifications for development tools
+# This file is sourced by .bash_profile
+
+EOF
+        log info "Created .bash_path file"
+    fi
+
+    # Add the PATH entry with comment
+    {
+        echo ""
+        echo "# ${description}"
+        echo "${path_command}"
+    } >> "${bash_path_file}"
+
+    report_changed "Added ${description} to .bash_path"
+    return 0
+}
+
+# Ensure .bash_profile sources .bash_path
+ensure_bash_path_sourced() {
+    local bash_profile="${HOME}/.bash_profile"
+    local bash_path="${HOME}/.bash_path"
+    local source_line='[[ -f ~/.bash_path ]] && source ~/.bash_path'
+
+    # Create .bash_path if it doesn't exist
+    if [[ ! -f "${bash_path}" ]]; then
+        if ! dry_run_report "Would create .bash_path file"; then
+            cat > "${bash_path}" << 'EOF'
+# ~/.bash_path
+# PATH modifications for development tools
+# This file is sourced by .bash_profile
+
+EOF
+            log info "Created .bash_path file"
+        fi
+    fi
+
+    # Check if .bash_profile already sources .bash_path
+    if [[ -f "${bash_profile}" ]] && grep -qF ".bash_path" "${bash_profile}"; then
+        log info ".bash_profile already sources .bash_path"
+        return 0
+    fi
+
+    if dry_run_report "Would add .bash_path sourcing to .bash_profile"; then
+        return 0
+    fi
+
+    # Create .bash_profile if it doesn't exist
+    if [[ ! -f "${bash_profile}" ]]; then
+        cat > "${bash_profile}" << 'EOF'
+# ~/.bash_profile
+# Bash login shell configuration
+
+EOF
+        log info "Created .bash_profile"
+    fi
+
+    # Add sourcing line
+    {
+        echo ""
+        echo "# Source PATH modifications"
+        echo "${source_line}"
+    } >> "${bash_profile}"
+
+    report_changed "Updated .bash_profile to source .bash_path"
+    return 0
+}
+
+# -----------------------------------------------------------------------------
 # Export functions for use in sourced scripts
 # -----------------------------------------------------------------------------
 
@@ -297,3 +406,5 @@ export -f get_platform
 export -f create_backup_dir
 export -f backup_path
 export -f stow_package
+export -f add_to_path_file
+export -f ensure_bash_path_sourced
