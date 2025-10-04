@@ -13,3 +13,6 @@
 [submodule "libs/bats/bats-file"]
 	path = libs/bats/bats-file
 	url = https://github.com/bats-core/bats-file.git
+[submodule "libs/colr"]
+	path = libs/colr
+	url = https://github.com/welbornprod/colr.sh.git
