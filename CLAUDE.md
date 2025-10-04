@@ -129,9 +129,12 @@ Always prefer existing library functionality over custom implementations:
 3. **Custom implementation last resort**: Only write custom code when libraries cannot handle the use case
 
 **Available libraries:**
+- **bash-utility** (`libs/bash-utility/`): Comprehensive bash standard library (string, array, file, validation, etc.)
 - **bashlog** (`libs/bashlog/`): Logging with levels (info, warn, error, debug), file output, syslog
 - **colr.sh** (`libs/colr/`): Terminal colors with 256-color support
 - **utils.sh** (`libs/utils.sh`): Project-specific utilities that leverage the above libraries
+
+**See SHELL_SCRIPTING.md for comprehensive development guidelines.**
 
 #### State-Based Execution (Ansible-Inspired Patterns)
 Scripts should adopt these patterns for clarity and idempotency:
