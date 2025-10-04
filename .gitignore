@@ -19,3 +19,9 @@ oldfiles/
 
 # Test outputs
 test_*
+
+# AI Prompt
+prompt.md
+
+# Claude local settings
+settings.local.json
