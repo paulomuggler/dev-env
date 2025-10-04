@@ -390,6 +390,74 @@ EOF
 }
 
 # -----------------------------------------------------------------------------
+# Shell.d Management
+# Manages tool-specific shell configuration symlinks
+# -----------------------------------------------------------------------------
+
+# Link a tool's shell config into shell.d/
+# Usage: link_shell_config <tool_name>
+# Expects: dotfiles/<tool_name>/<tool_name>.sh to exist
+# Creates: dotfiles/shell/dot-shell.d/<tool_name>.sh -> ../../<tool_name>/<tool_name>.sh
+# Returns: 0 on success, 1 on error
+link_shell_config() {
+    local tool_name="$1"
+    local dotfiles_dir="${SCRIPT_DIR}/../dotfiles"
+    local source_file="${dotfiles_dir}/${tool_name}/${tool_name}.sh"
+    local shelld_dir="${dotfiles_dir}/shell/dot-shell.d"
+    local link_file="${shelld_dir}/${tool_name}.sh"
+
+    # Check if source file exists
+    if [[ ! -f "${source_file}" ]]; then
+        log error "Config file not found: dotfiles/${tool_name}/${tool_name}.sh"
+        return 1
+    fi
+
+    if dry_run_report "Would symlink ${tool_name}.sh into .shell.d/"; then
+        return 0
+    fi
+
+    # Create dot-shell.d directory if it doesn't exist
+    mkdir -p "${shelld_dir}"
+
+    # Remove existing link/file if present
+    if [[ -e "${link_file}" ]] || [[ -L "${link_file}" ]]; then
+        rm "${link_file}"
+    fi
+
+    # Create relative symlink
+    # From dot-shell.d/ we need to go up one level, then into tool dir
+    ln -s "../../${tool_name}/${tool_name}.sh" "${link_file}"
+
+    log info "Symlinked .shell.d/${tool_name}.sh -> dotfiles/${tool_name}/${tool_name}.sh"
+    report_changed "Linked ${tool_name} shell configuration"
+
+    return 0
+}
+
+# Remove a shell configuration file from .shell.d/
+# Usage: remove_shell_config <tool_name>
+remove_shell_config() {
+    local tool_name="$1"
+    local shelld_dir="${SCRIPT_DIR}/../dotfiles/shell/dot-shell.d"
+    local config_file="${shelld_dir}/${tool_name}.sh"
+
+    if [[ ! -f "${config_file}" ]]; then
+        log info "No .shell.d/${tool_name}.sh to remove"
+        return 0
+    fi
+
+    if dry_run_report "Would remove ${tool_name}.sh from .shell.d/"; then
+        return 0
+    fi
+
+    rm "${config_file}"
+    log info "Removed .shell.d/${tool_name}.sh"
+    report_changed "Removed ${tool_name} shell configuration"
+
+    return 0
+}
+
+# -----------------------------------------------------------------------------
 # Export functions for use in sourced scripts
 # -----------------------------------------------------------------------------
 
@@ -408,3 +476,5 @@ export -f backup_path
 export -f stow_package
 export -f add_to_path_file
 export -f ensure_bash_path_sourced
+export -f link_shell_config
+export -f remove_shell_config

@@ -21,24 +21,38 @@ if [[ -f ~/.bash_functions ]]; then
 fi
 
 # -----------------------------------------------------------------------------
-# SHELL & TOOL INITIALIZATION
-# NOTE: These will eventually move to their respective tool stow packages
+# TOOL-SPECIFIC CONFIGURATIONS
+# Source all tool configs from ~/.shell.d/ directory
+# Each tool gets its own file for modular configuration
+# -----------------------------------------------------------------------------
+
+if [[ -d ~/.shell.d ]]; then
+  for config in ~/.shell.d/*.sh; do
+    if [[ -f "${config}" ]]; then
+      source "${config}"
+    fi
+  done
+fi
+
+# -----------------------------------------------------------------------------
+# LEGACY TOOL INITIALIZATION (TO BE MIGRATED)
+# These will be moved to shell.d/ by their respective install scripts
 # -----------------------------------------------------------------------------
 
 # Initialize Starship for a custom prompt.
-# TODO: Move to dotfiles/starship/ when starship install script is created
+# TODO: Move to shell.d/starship.sh when starship install script is created
 if command -v starship &> /dev/null; then
   eval "$(starship init bash)"
 fi
 
 # Set up fzf (fuzzy finder) key bindings and fuzzy completion.
-# TODO: Move to dotfiles/fzf/ when fzf install script is created
+# TODO: Move to shell.d/fzf.sh when fzf install script is created
 if command -v fzf &> /dev/null; then
   eval "$(fzf --bash)"
 fi
 
 # Initialize zoxide, a "smarter cd" command.
-# TODO: Move to dotfiles/zoxide/ when zoxide install script is created
+# TODO: Move to shell.d/zoxide.sh when zoxide install script is created
 if command -v zoxide &> /dev/null; then
   eval "$(zoxide init bash)"
 fi

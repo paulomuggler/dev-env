@@ -290,14 +290,63 @@ brew install shellcheck
 shellcheck -x install-scripts/install-git.sh
 ```
 
+## DevEnv-Specific: Tool Installation Pattern
+
+### Complete Tool Encapsulation
+
+Each tool should be fully encapsulated with all configuration externalized:
+
+**Directory Structure:**
+```
+dotfiles/<tool>/
+├── <tool>.sh           # Shell integration (aliases, init)
+├── .config/<tool>/     # Config files (if tool uses XDG)
+│   └── config
+├── dot-<file>          # Home dotfiles (if needed)
+└── README.md           # Tool documentation
+
+install-scripts/install-<tool>.sh
+```
+
+### Configuration Externalization Rule
+
+**❌ NEVER embed configuration strings in install scripts:**
+```bash
+# BAD - config in script
+local config='alias foo=bar
+export FOO=baz'
+echo "$config" > file
+```
+
+**✅ ALWAYS use external config files:**
+```bash
+# GOOD - config in dotfiles/<tool>/<tool>.sh
+link_shell_config "<tool>"
+stow_package "<tool>"
+```
+
+**Why:**
+- Single source of truth in dotfiles/
+- Easy to edit without touching install script
+- Proper version control for configs
+- Clear separation of concerns
+
+### Tool Installation Workflow
+
+1. **Create tool package**: `dotfiles/<tool>/`
+2. **Add config files**: Shell integration, tool configs
+3. **Create install script**: Install tool, link configs, stow package
+4. **Test**: Verify installation, config application, idempotency
+
 ## Summary: Development Workflow
 
 1. **Plan**: Understand what the script needs to do
 2. **Check libraries**: Look in bash-utility, Pure Bash Bible for existing solutions
 3. **Write**: Follow Google Style Guide, use library functions
-4. **Lint**: Run ShellCheck before testing
-5. **Test**: Dry-run → Manual test → Idempotency test
-6. **Review**: Check against Bash Pitfalls
-7. **Commit**: Ensure ShellCheck passes
+4. **Externalize configs**: Use dotfiles/, never embed in scripts
+5. **Lint**: Run ShellCheck before testing
+6. **Test**: Dry-run → Manual test → Idempotency test
+7. **Review**: Check against Bash Pitfalls
+8. **Commit**: Ensure ShellCheck passes
 
 **Remember**: Look for existing → improve existing → roll your own
