@@ -198,7 +198,7 @@
 
 ### Open Questions
 - **Branch strategy**: Single branch with platform detection vs separate platform branches?
-- **Testing framework**: When to introduce BATS or other testing?
+- **Testing approach**: Manual testing vs automated testing needs
 - **Plugin management**: How to handle tmux/neovim plugin updates?
 - **Secret management**: Enhance beyond simple .env file approach?
 

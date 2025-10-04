@@ -168,17 +168,18 @@ check_installed() # Verify tool exists and return state
 - Provide troubleshooting guidance
 
 ### Testing Approach
-- Minimal validation that confirms tool readiness
-- `--version` checks after installation
-- Basic config application verification after stow
-- Consider BATS for future automated testing
+- **Manual testing**: Run install scripts and verify behavior on actual system
+- **Dry-run mode**: Test scripts with `DRY_RUN=true` to preview without changes
+- **Idempotency testing**: Run scripts twice; second run should report "OK" states
+- **Version checks**: Validate installation with `--version` or equivalent
+- **Config verification**: Confirm stow packages apply correctly
+- **Fresh environment testing**: Eventually test on clean macOS VM when possible
 
 ## Tools & Libraries
 
 ### Recommended Bash Libraries
 - **bashlog**: Lightweight logging with levels, file output, debugging
 - **colr.sh**: Terminal colors with 256-color support
-- **BATS-Core**: Testing framework for future automated tests
 
 ### Environment Variables
 - Source `.env` for secrets (API keys for LLM CLIs)
