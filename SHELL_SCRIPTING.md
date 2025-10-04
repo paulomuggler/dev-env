@@ -96,6 +96,43 @@ All install scripts should source `utils.sh` which automatically loads bash-util
 
 ## Function Isolation and Sourcing
 
+### Script-Relative Paths: The Gold Standard
+
+**Always anchor paths to the script's own directory**, not `$PWD`.
+
+**Why?** Relative paths like `. ./lib/helpers.sh` only work when the current directory happens to match the script location. Run from elsewhere and it breaks.
+
+**The pattern:**
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Resolve script's directory, following symlinks safely
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source relative to script location
+# NOTE: shellcheck source path is relative to project root
+# shellcheck source=lib/helpers.sh
+source "${SCRIPT_DIR}/../lib/helpers.sh"
+```
+
+**Benefits:**
+- ✅ Location-independent (works from any directory)
+- ✅ Portable (no `cd` gymnastics needed)
+- ✅ Predictable (paths relative to code layout, not environment)
+- ✅ ShellCheck-friendly (`# shellcheck source=...` hints work)
+
+**For project-wide libraries:**
+```bash
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+source "${PROJECT_ROOT}/libs/utils.sh"
+```
+
+**Anti-patterns (DON'T):**
+- ❌ `cd "$(dirname "$0")"` - Mutates working directory, breaks caller context
+- ❌ Hardcoded relative paths (`. ../lib.sh`) - Fragile
+- ❌ Relying on `$PWD` or `$0` for directory - Unreliable under sourcing/subshells
+
 ### Key Takeaway from [Bash Library Practices](https://stackoverflow.com/questions/11369522/how-to-find-or-make-a-bash-utility-script-library)
 
 **Prefer non-subshell sourcing** for utility libraries:
