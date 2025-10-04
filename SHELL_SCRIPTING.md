@@ -90,6 +90,7 @@ Project-specific utilities NOT provided by bash-utility:
 - **Installation validation**: `check_installed` - wraps `check::command_exists` with version reporting
 - **Dry-run support**: `is_dry_run`, `dry_run_report` - preview mode for scripts
 - **Platform helpers**: `is_macos`, `is_linux`, `get_platform` - convenience wrappers for `os::detect_os`
+- **Backup/safety**: `create_backup_dir`, `backup_path` - timestamped backups for existing configs before stowing
 
 All install scripts should source `utils.sh` which automatically loads bash-utility, bashlog, and colr.sh. 
 

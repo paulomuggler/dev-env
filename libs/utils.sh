@@ -118,6 +118,42 @@ get_platform() {
 }
 
 # -----------------------------------------------------------------------------
+# Backup and Safety Functions
+# These handle existing config backups before stowing
+# -----------------------------------------------------------------------------
+
+# Create a timestamped backup directory
+# Usage: backup_dir=$(create_backup_dir)
+# Returns: Path to created backup directory
+create_backup_dir() {
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_dir="${HOME}/.config_backup_${timestamp}"
+    mkdir -p "${backup_dir}"
+    echo "${backup_dir}"
+}
+
+# Backup a file or directory if it exists and is not a symlink
+# Usage: backup_path <source> <backup_dir>
+# Returns: 0 if backed up or doesn't exist, 1 on error
+backup_path() {
+    local source="$1"
+    local backup_dir="$2"
+
+    # Only backup if exists and is NOT a symlink
+    if [[ -e "${source}" ]] && [[ ! -L "${source}" ]]; then
+        if cp -r "${source}" "${backup_dir}/"; then
+            log warn "Backed up ${source} to ${backup_dir}/"
+            return 0
+        else
+            log error "Failed to backup ${source}"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# -----------------------------------------------------------------------------
 # Export functions for use in sourced scripts
 # -----------------------------------------------------------------------------
 
@@ -131,3 +167,5 @@ export -f dry_run_report
 export -f is_macos
 export -f is_linux
 export -f get_platform
+export -f create_backup_dir
+export -f backup_path
