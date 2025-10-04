@@ -85,16 +85,13 @@ log debug "Verbose debugging info"  # Only shows if DEBUG=1
 Advanced terminal colors (256-color support) - use when bashlog's built-in colors aren't sufficient.
 
 #### utils.sh (`libs/utils.sh`)
-Project-specific utilities wrapping the above libraries:
-- **State reporting**: `report_changed`, `report_ok`, `report_skipped`, `report_failed`
-- **Validation**: `command_exists`, `check_installed`, `verify_path`
-- **Platform detection**: `is_macos`, `is_linux`, `get_platform`
-- **Backup/safety**: `create_backup_dir`, `backup_path`
-- **Dry-run**: `is_dry_run`, `dry_run_report`
+Project-specific utilities NOT provided by bash-utility:
+- **State reporting (Ansible-style)**: `report_changed`, `report_ok`, `report_skipped`, `report_failed` - colored status output
+- **Installation validation**: `check_installed` - wraps `check::command_exists` with version reporting
+- **Dry-run support**: `is_dry_run`, `dry_run_report` - preview mode for scripts
+- **Platform helpers**: `is_macos`, `is_linux`, `get_platform` - convenience wrappers for `os::detect_os`
 
-All install scripts should source utils.sh which automatically loads bash-utility and bashlog.
-
-# AI: are you sure youre not mentioning as in our utils stuff that which is already provided in the included libs, namely bash-utility? please refrain from doing so; I believe the included lib already has command_exists, check_installed equivalents, but double check I'm not 100% sure; do this for all the stuff you mentioned under utils.sh. it's important to get this doc right so as not to be a source of confusion, since it will be a stable reference always when developing shell scripts. 
+All install scripts should source `utils.sh` which automatically loads bash-utility, bashlog, and colr.sh. 
 
 ## Function Isolation and Sourcing
 
@@ -216,13 +213,13 @@ fi
 
 ## Common Pitfalls to Avoid
 
-1. **Unquoted variables**: Always quote: `"{$var}"` not `$var`
+1. **Unquoted variables**: Always quote: `"${var}"` not `$var` (braces optional but recommended)
 2. **Word splitting**: Use arrays for lists, not space-separated strings
 3. **`[` vs `[[`**: Prefer `[[` for conditionals (more features, fewer gotchas)
 4. **`-a` and `-o`**: Don't use in `[` - use `&&` and `||` with `[[`
 5. **Command substitution in quotes**: `"$(command)"` preserves whitespace
 6. **Exit codes**: Check with `$?` immediately after command
-# AI: add bit about when to use (( ... )) as per the google style guide
+7. **Arithmetic**: Use `(( ... ))` for arithmetic operations: `(( i++ ))` or `if (( count > 10 )); then`
 
 ## Debugging Techniques
 
