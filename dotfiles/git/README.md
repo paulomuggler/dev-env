@@ -4,7 +4,7 @@ This stow package manages Git configuration files.
 
 ## Files Managed
 
-- `dot_gitconfig` → `~/.gitconfig` - Main Git configuration file
+- `dot-gitconfig` → `~/.gitconfig` - Main Git configuration file
 
 ## Configuration Highlights
 
@@ -39,4 +39,4 @@ stow -d dotfiles -t ~ git
 
 ## Customization
 
-Edit `dotfiles/git/dot_gitconfig` and re-stow to apply changes.
+Edit `dotfiles/git/dot-gitconfig` and re-stow to apply changes.

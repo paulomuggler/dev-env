@@ -20,31 +20,36 @@ install_git() {
   log info "=== Installing Git ==="
 
   # Check if already installed
-  if check_installed git; then
-    return 0
+  if ! check_installed git; then
+    # Dry-run check
+    if dry_run_report "Would install git via brew"; then
+      return 0
+    fi
+
+    # Install via Homebrew
+    log info "Installing git via Homebrew..."
+    if brew install git; then
+      report_changed "Git installed successfully"
+    else
+      report_failed "Failed to install git via brew"
+      return 1
+    fi
+
+    # Verify installation
+    if ! check_installed git; then
+      report_failed "Git installation verification failed"
+      return 1
+    fi
   fi
 
-  # Dry-run check
-  if dry_run_report "Would install git via brew"; then
-    return 0
-  fi
-
-  # Install via Homebrew
-  log info "Installing git via Homebrew..."
-  if brew install git; then
-    report_changed "Git installed successfully"
-  else
-    report_failed "Failed to install git via brew"
+  # Stow git configuration (always apply, even if git was already installed)
+  log info "Applying git configuration..."
+  if ! stow_package "git"; then
+    report_failed "Failed to apply git configuration"
     return 1
   fi
 
-  # Verify installation
-  if check_installed git; then
-    return 0
-  else
-    report_failed "Git installation verification failed"
-    return 1
-  fi
+  return 0
 }
 
 # -----------------------------------------------------------------------------
