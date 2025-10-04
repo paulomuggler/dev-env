@@ -19,11 +19,11 @@ Adhere to the **[Google Shell Style Guide](https://google.github.io/styleguide/s
 **Run [ShellCheck](https://www.shellcheck.net/) regularly** before committing:
 
 ```bash
-# Use -x to follow source directives
-shellcheck -x install-scripts/*.sh libs/utils.sh
+# Use the wrapper script that runs shellcheck from each script's directory
+./bin/check-scripts.sh
 ```
 
-**Important**: Always use `-x` flag to enable following source directives. This catches errors in sourced files too.
+**Why a wrapper?** ShellCheck resolves paths relative to where it's run from, not relative to the script. The wrapper runs shellcheck from each script's directory so `source "${SCRIPT_DIR}/../libs/utils.sh"` resolves correctly.
 
 **Benefits:**
 - Catches common bugs and anti-patterns
@@ -34,7 +34,7 @@ shellcheck -x install-scripts/*.sh libs/utils.sh
 ```bash
 # .git/hooks/pre-commit
 #!/bin/bash
-shellcheck -x install-scripts/*.sh libs/utils.sh || exit 1
+./bin/check-scripts.sh || exit 1
 ```
 
 ### Manual Testing Approach
@@ -113,9 +113,7 @@ set -euo pipefail
 # Resolve script's directory, following symlinks safely
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source relative to script location
-# NOTE: shellcheck source path is relative to project root
-# shellcheck source=lib/helpers.sh
+# Source relative to script location (no shellcheck directive needed with wrapper)
 source "${SCRIPT_DIR}/../lib/helpers.sh"
 ```
 

@@ -14,12 +14,11 @@
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source bashlog for logging
-# shellcheck source=libs/bashlog/log.sh
 source "${SCRIPT_DIR}/bashlog/log.sh"
 
 # Source bash-utility for standard library functions
 # Note: bash_utility.sh uses relative paths, must cd into directory
-# shellcheck source=libs/bash-utility/bash_utility.sh
+# shellcheck disable=SC1091
 (
     cd "${SCRIPT_DIR}/bash-utility" || exit 1
     source bash_utility.sh
@@ -29,7 +28,6 @@ source "${SCRIPT_DIR}/bashlog/log.sh"
 }
 
 # Source colr.sh for terminal colors
-# shellcheck source=libs/colr/colr.sh
 source "${SCRIPT_DIR}/colr/colr.sh"
 
 # -----------------------------------------------------------------------------

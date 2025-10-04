@@ -8,11 +8,9 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 # Source utility functions (loads bashlog, bash-utility, colr.sh)
-# shellcheck source=libs/utils.sh
-source "${PROJECT_ROOT}/libs/utils.sh"
+source "${SCRIPT_DIR}/../libs/utils.sh"
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
