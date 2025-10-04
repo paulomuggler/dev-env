@@ -34,6 +34,7 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 - **fzf** - Fuzzy finder for files, command history, and interactive selection
 - **ripgrep** - Fast text search tool, better than grep
 - **fd** - Fast file finder, better than find
+- **tree** - Display directory structure in tree format
 - **exa** - Modern replacement for ls with colors and git integration
 - **bat** - Cat clone with syntax highlighting and git integration
 - **yazi** - Terminal file manager
