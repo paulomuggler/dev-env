@@ -1,1 +1,1 @@
-../../../../../../external/lazy-llm/nvim/.config/nvim/lua/plugins/llm-send.lua
+../../../../../../external/lazy-llm/nvim-llm-send-plugin/.config/nvim/lua/plugins/llm-send.lua

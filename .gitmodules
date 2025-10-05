@@ -4,3 +4,6 @@
 [submodule "libs/bash-utility"]
 	path = libs/bash-utility
 	url = https://github.com/labbots/bash-utility.git
+[submodule "external/lazy-llm"]
+	path = external/lazy-llm
+	url = git@github.com:paulomuggler/lazy-llm.git

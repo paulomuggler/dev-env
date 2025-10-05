@@ -1,1 +1,1 @@
-../../../../../../external/lazy-llm/nvim/.config/nvim/lua/plugins/git.lua
+../../../../../../external/lazy-llm/nvim-git-plugin/.config/nvim/lua/plugins/git.lua
