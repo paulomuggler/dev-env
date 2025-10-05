@@ -1,0 +1,63 @@
+# bottom (btm) configuration
+# https://github.com/ClementTsang/bottom
+
+[flags]
+# Update rate (how often to refresh data)
+rate = "1s"
+
+# Temperature unit (c, f, k)
+temperature_type = "c"
+
+# Show full command line in process list
+whole_word = false
+
+# Enable case sensitivity
+case_sensitive = false
+
+# Enable regex search by default
+regex = false
+
+# Group processes with same name
+group_processes = false
+
+# Show average CPU usage
+avg_cpu = false
+
+# Use battery percentage
+battery = true
+
+# Disable mouse support (optional)
+disable_click = false
+
+# Basic mode (simplified interface)
+basic = false
+
+[colors]
+# Use Nord-inspired color scheme
+# You can also use: "default", "gruvbox", "nord"
+# For now using default, can be customized
+
+[styles]
+# Widget styling
+theme = "default"
+
+[row]
+# Default layout: CPU, Memory, Network, Disk, Temperature, Process list
+[[row.child]]
+type = "cpu"
+
+[[row.child]]
+type = "mem"
+
+[[row.child]]
+type = "net"
+
+[[row.child]]
+type = "disk"
+
+[[row.child]]
+type = "temp"
+
+[[row.child]]
+type = "proc"
+default = true  # Make process list the default focused widget
