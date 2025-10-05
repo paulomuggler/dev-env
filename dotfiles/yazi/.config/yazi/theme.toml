@@ -1,0 +1,6 @@
+# Yazi theme configuration
+# Uses Catppuccin Mocha flavor via yazi package manager
+# Install flavor with: ya pkg add yazi-rs/flavors:catppuccin-mocha
+
+[flavor]
+dark = "catppuccin-mocha"

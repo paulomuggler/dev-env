@@ -1,0 +1,37 @@
+# Yazi configuration
+# https://yazi-rs.github.io/docs/configuration/yazi/
+
+[manager]
+# Show hidden files by default
+show_hidden = true
+
+# Sort directories first
+sort_dir_first = true
+
+# Line mode (size, permissions, time)
+linemode = "size"
+
+# Show symlink target
+show_symlink = true
+
+[preview]
+# Image preview support
+image_filter = "lanczos3"
+image_quality = 80
+
+# Preview tab size
+tab_size = 2
+
+# Maximum preview size (10MB)
+max_width = 1000
+max_height = 900
+
+[opener]
+# Use system default applications
+# You can customize openers per file type here
+
+[tasks]
+# Concurrent tasks
+micro_workers = 5
+macro_workers = 10
+bizarre_retry = 5
