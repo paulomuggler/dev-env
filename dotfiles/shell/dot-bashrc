@@ -44,12 +44,6 @@ fi
 # These will be moved to shell.d/ by their respective install scripts
 # -----------------------------------------------------------------------------
 
-# Set up fzf (fuzzy finder) key bindings and fuzzy completion.
-# TODO: Move to shell.d/fzf.sh when fzf install script is created
-if command -v fzf &> /dev/null; then
-  eval "$(fzf --bash)"
-fi
-
 # Initialize zoxide, a "smarter cd" command.
 # TODO: Move to shell.d/zoxide.sh when zoxide install script is created
 if command -v zoxide &> /dev/null; then
