@@ -2,6 +2,44 @@
 
 This document lists all tools and configurations installed by the DevEnv setup, organized in dependency order.
 
+## Current Status
+
+### Completed Integrations (shell.d/ Pattern)
+Tools following the modular shell configuration pattern:
+- ✅ **bat** - Cat replacement with syntax highlighting
+- ✅ **eza** - Modern ls replacement
+- ✅ **git** - Shell aliases and functions
+
+### Priority Migrations (Next)
+Legacy tools to migrate to shell.d/ pattern:
+- 🔄 **starship** - Currently in `.bashrc`, needs dedicated package
+- 🔄 **fzf** - Currently in `.bashrc`, needs dedicated package
+- 🔄 **zoxide** - Currently in `.bashrc`, needs dedicated package
+
+### Shell Configuration Architecture
+
+**Sourcing Order in `.bashrc`:**
+1. `.bash_env` - Environment variables
+2. `.bash_aliases` - General-purpose aliases (fallbacks)
+3. `.bash_functions` - General-purpose functions
+4. **`.shell.d/*.sh`** - Tool-specific configs (override defaults)
+5. Legacy tool initializations (to be migrated)
+
+**Key Design Principle:**
+`.shell.d/` configs are sourced AFTER `.bash_aliases` and `.bash_functions`. This allows:
+- Fallback defaults in `.bash_aliases` (e.g., `ll='ls -la'`)
+- Tool-specific overrides via `.shell.d/` (e.g., `ll='eza -la --git --icons'`)
+- Tools work even if not installed (fallback to standard commands)
+
+**Tool Package Structure:**
+```
+dotfiles/<tool>/
+├── <tool>.sh              # Shell integration (symlinked to .shell.d/)
+├── .config/<tool>/config  # Config files (stowed to ~/.config/)
+├── dot-<file>            # Home dotfiles (stowed to ~/)
+└── README.md             # Tool documentation
+```
+
 ## Phase 1: Foundation Tools
 
 ### 1. Package Management
@@ -13,7 +51,7 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 ## Phase 2: Core Development Tools
 
 ### 3. Version Control
-- **Git** - Version control system, fundamental for development workflow
+- **Git** - Version control system, fundamental for development workflow (✅ integrated)
 
 ### 4. Text Editing & IDE
 - **Neovim** - Modern vim-based editor, core of the development environment
@@ -36,8 +74,8 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 - **fd** - Fast file finder, better than find
 - **tree** - Display directory structure in tree format
 - **jq** - Command-line JSON processor for parsing and formatting
-- **exa** - Modern replacement for ls with colors and git integration
-- **bat** - Cat clone with syntax highlighting and git integration
+- **eza** - Modern replacement for ls with colors and git integration (✅ integrated)
+- **bat** - Cat clone with syntax highlighting and git integration (✅ integrated)
 - **yazi** - Terminal file manager
 
 ### 8. System Monitoring
@@ -106,14 +144,17 @@ This document lists all tools and configurations installed by the DevEnv setup, 
 ## Phase 6: Configuration Packages (via Stow)
 
 ### 20. Shell Configuration
-- **shell package** - `.bashrc`, `.bash_profile`, `.bash_aliases`, `.bash_functions`
+- **shell package** - `.bashrc`, `.bash_profile`, `.bash_aliases`, `.bash_functions` (✅ integrated)
+- **shell.d/ pattern** - Modular tool-specific configurations (✅ integrated)
 - **PATH management** - Dedicated `.bash_path` file for all PATH modifications
 - **bin scripts** - Custom utility scripts
 
 ### 21. Application Configurations
-- **starship package** - Prompt configuration with Catppuccin theme
+- **starship package** - Prompt configuration with Catppuccin theme (🔄 needs migration to shell.d/)
 - **tmux package** - Terminal multiplexer settings with Catppuccin theme
-- **git package** - Git configuration and aliases
+- **git package** - Git configuration and aliases (✅ integrated with shell.d/)
+- **bat package** - Syntax highlighting configuration (✅ integrated with shell.d/)
+- **eza package** - Modern ls aliases and configuration (✅ integrated with shell.d/)
 
 ### 22. Editor Configurations
 - **nvim package** - Default Neovim configuration
