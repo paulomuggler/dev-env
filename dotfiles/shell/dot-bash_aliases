@@ -10,9 +10,6 @@ alias ll='ls -la'
 # git status shortcut
 alias stt='git status'
 
-# A better 'cat' with syntax highlighting (requires bat)
-alias cat='bat --paging=never'
-
 # Clear the terminal screen and scrollback buffer.
 alias cls='clear && printf "\033[3J"'
 
