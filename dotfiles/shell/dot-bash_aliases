@@ -7,9 +7,6 @@
 # More detailed 'ls' output.
 alias ll='ls -la'
 
-# git status shortcut
-alias stt='git status'
-
 # Clear the terminal screen and scrollback buffer.
 alias cls='clear && printf "\033[3J"'
 

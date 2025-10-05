@@ -49,6 +49,24 @@ install_git() {
     return 1
   fi
 
+  # Link git shell configuration into shell.d/
+  log info "Configuring git shell integration..."
+  if ! link_shell_config "git"; then
+    report_failed "Failed to link git shell configuration"
+    return 1
+  fi
+
+  # Re-stow shell package to include git.sh symlink
+  local dotfiles_dir
+  dotfiles_dir="$(cd "${SCRIPT_DIR}/../dotfiles" && pwd)"
+
+  if (cd "${dotfiles_dir}" && stow -R --dotfiles -t "${HOME}" shell); then
+    report_changed "Applied git shell configuration"
+  else
+    report_failed "Failed to re-stow shell configuration"
+    return 1
+  fi
+
   return 0
 }
 
