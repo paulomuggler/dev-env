@@ -39,17 +39,6 @@ if [[ -d ~/.shell.d ]]; then
   done
 fi
 
-# -----------------------------------------------------------------------------
-# LEGACY TOOL INITIALIZATION (TO BE MIGRATED)
-# These will be moved to shell.d/ by their respective install scripts
-# -----------------------------------------------------------------------------
-
-# Initialize zoxide, a "smarter cd" command.
-# TODO: Move to shell.d/zoxide.sh when zoxide install script is created
-if command -v zoxide &> /dev/null; then
-  eval "$(zoxide init bash)"
-fi
-
 # Initialize Homebrew's bash completion.
 if [[ -r /opt/homebrew/etc/profile.d/bash_completion.sh ]]; then
   source /opt/homebrew/etc/profile.d/bash_completion.sh
