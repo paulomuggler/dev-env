@@ -24,6 +24,11 @@ fi
 # TOOL-SPECIFIC CONFIGURATIONS
 # Source all tool configs from ~/.shell.d/ directory
 # Each tool gets its own file for modular configuration
+#
+# SOURCING ORDER NOTE:
+# .shell.d/ configs are sourced AFTER .bash_aliases and .bash_functions.
+# This means tool-specific aliases/functions will override any defaults set above.
+# This is intentional - allows fallback defaults while giving tools precedence.
 # -----------------------------------------------------------------------------
 
 if [[ -d ~/.shell.d ]]; then
@@ -38,12 +43,6 @@ fi
 # LEGACY TOOL INITIALIZATION (TO BE MIGRATED)
 # These will be moved to shell.d/ by their respective install scripts
 # -----------------------------------------------------------------------------
-
-# Initialize Starship for a custom prompt.
-# TODO: Move to shell.d/starship.sh when starship install script is created
-if command -v starship &> /dev/null; then
-  eval "$(starship init bash)"
-fi
 
 # Set up fzf (fuzzy finder) key bindings and fuzzy completion.
 # TODO: Move to shell.d/fzf.sh when fzf install script is created
