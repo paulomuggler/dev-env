@@ -242,6 +242,15 @@ main() {
   log info "Installation directory: ${PROJECT_ROOT}"
   log info ""
 
+  # Initialize git submodules
+  log info "Initializing git submodules..."
+  if (cd "${PROJECT_ROOT}" && git submodule update --init --recursive); then
+    log info "✓ Submodules initialized"
+  else
+    log warn "Failed to initialize submodules, some features may not work"
+  fi
+  log info ""
+
   # Confirmation prompt (skip if --yes flag provided)
   if [[ "${AUTO_YES}" != "true" ]]; then
     read -p "Continue with installation? [y/N] " -n 1 -r

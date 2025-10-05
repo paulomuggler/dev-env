@@ -42,11 +42,37 @@ install_tmux() {
     fi
   fi
 
-  # Stow tmux configuration
+  # Initialize TPM submodule
+  log info "Initializing TPM (Tmux Plugin Manager) submodule..."
+  local project_root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+  if (cd "${project_root}" && git submodule update --init --recursive dotfiles/tmux/.config/tmux/plugins/tpm); then
+    report_changed "TPM submodule initialized"
+  else
+    log warn "Failed to initialize TPM submodule"
+    log warn "You can initialize manually: git submodule update --init --recursive"
+  fi
+
+  # Stow tmux configuration (includes TPM)
   log info "Applying tmux configuration..."
   if ! stow_package "tmux"; then
     report_failed "Failed to apply tmux configuration"
     return 1
+  fi
+
+  # Install/Update tmux plugins
+  local tpm_path="${HOME}/.config/tmux/plugins/tpm"
+  if [[ -d "$tpm_path" ]]; then
+    log info "Installing tmux plugins..."
+    # Run TPM install script
+    if bash "${tpm_path}/bin/install_plugins" 2>&1 | grep -q "Already installed"; then
+      log info "✓ OK: Tmux plugins already installed"
+    else
+      report_changed "Tmux plugins installed"
+    fi
+  else
+    log warn "TPM not found at ${tpm_path}, plugins will need to be installed manually"
+    log warn "Inside tmux, press: prefix + I"
   fi
 
   return 0
@@ -74,8 +100,19 @@ exit_code=$?
 
 if [[ ${exit_code} -eq 0 ]]; then
   log info "=== Tmux installation complete ==="
-  log info "Configuration applied to ~/.config/tmux/tmux.conf"
-  log info "Start tmux with: tmux"
+  log info ""
+  log info "Configuration: ~/.config/tmux/tmux.conf"
+  log info "Plugins installed via TPM (Tmux Plugin Manager)"
+  log info ""
+  log info "Key bindings:"
+  log info "  prefix + I        Install/update plugins"
+  log info "  prefix + U        Update all plugins"
+  log info "  prefix + alt + u  Uninstall plugins not in config"
+  log info "  prefix + F        Fuzzy-find windows/panes (tmux-fzf)"
+  log info "  prefix + Ctrl-s   Save session (tmux-resurrect)"
+  log info "  prefix + Ctrl-r   Restore session (tmux-resurrect)"
+  log info ""
+  log info "Start tmux: tmux"
 else
   log error "=== Tmux installation failed ==="
 fi

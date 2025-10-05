@@ -7,3 +7,6 @@
 [submodule "external/lazy-llm"]
 	path = external/lazy-llm
 	url = git@github.com:paulomuggler/lazy-llm.git
+[submodule "dotfiles/tmux/.config/tmux/plugins/tpm"]
+	path = dotfiles/tmux/.config/tmux/plugins/tpm
+	url = https://github.com/tmux-plugins/tpm
