@@ -4,6 +4,24 @@
 
 This is a terminal-based development environment bootstrapping utility that creates a complete, reproducible development setup. The environment centers around a tmux-based workspace integrating LLM CLI tools with nvim for enhanced productivity.
 
+## Critical Working Practices
+
+### Directory Context Awareness
+**ALWAYS verify your current working directory before running commands.**
+
+Common mistakes to avoid:
+- ❌ Running `./install-scripts/install-foo.sh` from `~` or unknown directory
+- ❌ Using relative paths without knowing where you are
+- ❌ Assuming you're in the project root
+
+**Best practices:**
+- ✅ Check `pwd` or verify context before running scripts
+- ✅ Use `cd ~/Projects/dev-env &&` prefix for project-relative commands
+- ✅ Use absolute paths when uncertain: `~/Projects/dev-env/install-scripts/install-foo.sh`
+- ✅ When in doubt: navigate explicitly first, then execute
+
+**Project root:** `/Users/paulomoreira/Projects/dev-env`
+
 ## Core Principles
 
 ### 1. Modularity & Idempotency
