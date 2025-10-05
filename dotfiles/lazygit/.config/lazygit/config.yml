@@ -1,0 +1,46 @@
+# lazygit configuration
+# https://github.com/jesseduffield/lazygit
+
+gui:
+  # Catppuccin Mocha theme
+  # https://github.com/catppuccin/lazygit
+  theme:
+    activeBorderColor:
+      - '#89b4fa'  # Blue
+      - bold
+    inactiveBorderColor:
+      - '#a6adc8'  # Subtext0
+    optionsTextColor:
+      - '#89b4fa'  # Blue
+    selectedLineBgColor:
+      - '#313244'  # Surface0
+    cherryPickedCommitBgColor:
+      - '#45475a'  # Surface1
+    cherryPickedCommitFgColor:
+      - '#89b4fa'  # Blue
+    unstagedChangesColor:
+      - '#f38ba8'  # Red
+    defaultFgColor:
+      - '#cdd6f4'  # Text
+    searchingActiveBorderColor:
+      - '#f9e2af'  # Yellow
+
+  # UI settings
+  showFileTree: true
+  showRandomTip: false
+  showCommandLog: false
+  nerdFontsVersion: "3"
+
+# Git settings
+git:
+  paging:
+    colorArg: always
+    pager: delta --dark --paging=never
+
+# Confirmation behavior
+confirmOnQuit: false
+
+# Keybindings customization (optional - add if needed)
+# keybinding:
+#   universal:
+#     quit: 'q'
