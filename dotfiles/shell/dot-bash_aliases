@@ -20,11 +20,3 @@ if ls --color=always > /dev/null 2>&1; then
 else
   alias ls='ls -GF'
 fi
-
-# Neovim configuration aliases
-# LazyVim is the default, so 'nvim' uses LazyVim
-# For backward compatibility:
-alias lazyvim='nvim'
-
-# Plain nvim without any configuration (for debugging/quick edits)
-alias nvim-plain='nvim_plain'
