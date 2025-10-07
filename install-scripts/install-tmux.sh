@@ -60,6 +60,24 @@ install_tmux() {
     return 1
   fi
 
+  # Link tmux shell configuration into shell.d/
+  log info "Configuring tmux shell integration..."
+  if ! link_shell_config "tmux"; then
+    report_failed "Failed to link tmux shell configuration"
+    return 1
+  fi
+
+  # Re-stow shell package to include tmux.sh symlink
+  local dotfiles_dir
+  dotfiles_dir="$(cd "${SCRIPT_DIR}/../dotfiles" && pwd)"
+
+  if (cd "${dotfiles_dir}" && stow -R --dotfiles -t "${HOME}" shell); then
+    report_changed "Applied tmux shell configuration"
+  else
+    report_failed "Failed to re-stow shell configuration"
+    return 1
+  fi
+
   # Install/Update tmux plugins
   local tpm_path="${HOME}/.config/tmux/plugins/tpm"
   if [[ -d "$tpm_path" ]]; then
