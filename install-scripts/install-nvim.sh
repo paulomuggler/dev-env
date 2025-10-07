@@ -161,9 +161,36 @@ setup_nodejs_provider() {
     return 0
   fi
 
+  # Check if neovim package is installed
+  local is_installed=false
   if npm list -g --depth=0 2>/dev/null | grep -q "neovim"; then
-    report_ok "Node.js neovim package already installed"
-    return 0
+    is_installed=true
+  fi
+
+  if $is_installed; then
+    # Check if it's up to date
+    local current_version
+    local latest_version
+    current_version=$(npm list -g neovim 2>/dev/null | grep neovim@ | sed -E 's/.*neovim@([0-9.]+).*/\1/')
+    latest_version=$(npm view neovim version 2>/dev/null)
+
+    if [[ "$current_version" == "$latest_version" ]]; then
+      report_ok "Node.js neovim package already up to date ($current_version)"
+      return 0
+    else
+      log info "Node.js neovim package outdated ($current_version -> $latest_version)"
+      if dry_run_report "Would update neovim npm package globally"; then
+        return 0
+      fi
+      log info "Updating neovim npm package..."
+      if npm install -g neovim; then
+        report_changed "Node.js provider updated to $latest_version"
+        return 0
+      else
+        log warn "Failed to update Node.js provider"
+        return 0
+      fi
+    fi
   fi
 
   if dry_run_report "Would install neovim npm package globally"; then
