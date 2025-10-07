@@ -22,6 +22,57 @@ Common mistakes to avoid:
 
 **Project root:** `/Users/paulomoreira/Projects/dev-env`
 
+### Project Familiarization Protocol
+**ALWAYS familiarize yourself with project conventions before making changes.**
+
+When starting work without full context (new conversation, after context compaction, or working on unfamiliar parts of the codebase):
+
+**Required steps:**
+1. **Scan project structure**: Use `Glob` to understand directory organization
+   ```
+   - install-scripts/*.sh       # Installation script patterns
+   - dotfiles/*/                # Configuration package structure
+   - libs/*.sh                  # Available utility functions
+   ```
+
+2. **Sample existing implementations**: Read 2-3 similar files to understand patterns
+   - If adding a tool install script → read `install-scripts/install-bat.sh`, `install-scripts/install-fzf.sh`
+   - If adding dotfiles → examine `dotfiles/bat/`, `dotfiles/fzf/` structures
+   - If modifying utilities → check `libs/utils.sh` for existing functions
+
+3. **Identify conventions**: Look for:
+   - Naming patterns (e.g., `dot-` prefix for dotfiles)
+   - Directory structure (e.g., tool configs in `dotfiles/[tool]/[tool].sh`, NOT in `dotfiles/shell/dot-shell.d/`)
+   - Utility function usage (e.g., `link_shell_config`, `stow_package`, `report_changed`)
+   - Error handling patterns
+   - Documentation standards
+
+4. **Work within established patterns**:
+   - ✅ Follow the conventions you discovered
+   - ✅ Use existing utility functions instead of reimplementing
+   - ✅ Match coding style, structure, and organization
+   - ❌ Don't invent new patterns when established ones exist
+   - ❌ Don't make assumptions about file locations or naming
+
+**Example workflow:**
+```bash
+# Starting task: "Add lynx installation script"
+# Step 1: Scan for similar scripts
+Glob: install-scripts/*.sh
+
+# Step 2: Read examples
+Read: install-scripts/install-bat.sh
+Read: install-scripts/install-fzf.sh
+
+# Step 3: Identify pattern
+# - Uses libs/utils.sh functions
+# - Follows: check_installed → install → stow_package → link_shell_config → restow
+# - Returns proper exit codes
+
+# Step 4: Implement following the pattern
+Write: install-scripts/install-lynx.sh (following discovered pattern)
+```
+
 ## Core Principles
 
 ### 1. Modularity & Idempotency
@@ -242,6 +293,50 @@ When adding any new tool to DevEnv, follow this complete workflow:
 - **Set fonts**: Use FiraCode Nerd Font as primary font choice
 - **Follow XDG**: Place configs in `~/.config/[tool]/` when supported
 - **Handle existing configs**: Import existing user configurations gracefully
+
+#### Shell Configuration Pattern (CRITICAL)
+**NEVER write directly to `dotfiles/shell/dot-shell.d/`**. Instead, follow this pattern:
+
+1. **Create tool's shell config**: `dotfiles/[tool]/[tool].sh` in the tool's own directory
+2. **Link via install script**: Use `link_shell_config "[tool]"` utility function
+3. **Re-stow shell package**: Run `stow -R --dotfiles -t "${HOME}" shell` to apply
+
+**Example from install-bat.sh:**
+```bash
+# Link bat shell configuration into shell.d/
+log info "Configuring bat shell integration..."
+if ! link_shell_config "bat"; then
+  report_failed "Failed to link bat shell configuration"
+  return 1
+fi
+
+# Re-stow shell package to include bat.sh symlink
+local dotfiles_dir
+dotfiles_dir="$(cd "${SCRIPT_DIR}/../dotfiles" && pwd)"
+
+if (cd "${dotfiles_dir}" && stow -R --dotfiles -t "${HOME}" shell); then
+  report_changed "Applied bat shell configuration"
+else
+  report_failed "Failed to re-stow shell configuration"
+  return 1
+fi
+```
+
+**What happens:**
+- `link_shell_config` creates symlink: `dotfiles/shell/dot-shell.d/[tool].sh` → `../../[tool]/[tool].sh`
+- Re-stowing the shell package deploys the new symlink to `~/.shell.d/[tool].sh`
+- `.bashrc` automatically sources all `.sh` files in `~/.shell.d/`
+
+**Directory structure:**
+```
+dotfiles/
+├── bat/
+│   ├── bat.sh              # Shell config lives here
+│   └── README.md
+├── shell/
+│   └── dot-shell.d/
+│       └── bat.sh          # Symlink to ../../bat/bat.sh
+```
 
 ### 4. Documentation & Integration
 - **Update SETUP.md**: Add tool to appropriate phase with clear description and justification
