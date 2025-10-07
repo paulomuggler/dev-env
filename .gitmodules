@@ -6,7 +6,7 @@
 	url = https://github.com/labbots/bash-utility.git
 [submodule "external/lazy-llm"]
 	path = external/lazy-llm
-	url = git@github.com:paulomuggler/lazy-llm.git
+	url = https://github.com/paulomuggler/lazy-llm.git
 [submodule "dotfiles/tmux/.config/tmux/plugins/tpm"]
 	path = dotfiles/tmux/.config/tmux/plugins/tpm
 	url = https://github.com/tmux-plugins/tpm

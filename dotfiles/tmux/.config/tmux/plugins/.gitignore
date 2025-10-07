@@ -1,0 +1,10 @@
+# Ignore all TPM-installed plugins
+# TPM (Tmux Plugin Manager) clones plugins here as git repos
+# Only tpm itself should be tracked (as a submodule)
+*
+
+# Keep tpm submodule
+!tpm/
+
+# Keep this .gitignore file
+!.gitignore
