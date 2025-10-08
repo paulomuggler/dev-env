@@ -16,3 +16,5 @@
 [x] add install-glow.sh script following modular install pattern
 
 [] fix color schemes in tmux and nvim clashing, looking broken
+
+[] add more LSP servers, test and configure LSPs in nvim
