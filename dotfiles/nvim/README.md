@@ -45,34 +45,23 @@ git submodule update --remote external/lazy-llm
 
 ### LLM Workspace Integration
 
-#### @ Path Completion (Fuzzy Finder + Native)
-Two completion methods for referencing workspace files in LLM prompts:
+See the **lazy-llm** submodule for LLM-specific features:
+- `lua/plugins/llm-send.lua` (symlinked) - Send buffers to LLM CLI
+- `lua/plugins/git.lua` (symlinked) - Git integration for LLM workflows
 
-**Method 1: Fuzzy Finder (Primary - Fast & Convenient)**
-1. Type `@` in insert mode
-2. Fuzzy file picker opens (Snacks.picker)
-3. Type fragments: `comp butt tsx` → finds `src/components/Button.tsx`
-4. Select file → inserts: `@src/components/Button.tsx`
+#### @ Path Completion (from lazy-llm)
+The llm-send plugin provides path completion for workspace file references:
 
-**Method 2: Native File Completion (Alternative - Traditional)**
-1. Press `<Ctrl-f>` in insert mode (or after typing partial path)
-2. Native vim file completion menu appears (`<C-x><C-f>`)
-3. Navigate through directories level by level
-4. Useful for drilling down known paths: `src/<Ctrl-f> components/<Ctrl-f> Button.tsx`
+**Method 1: Fuzzy Finder (Primary)**
+- Type `@` in insert mode → fuzzy picker opens
+- Search: `comp butt tsx` → finds `src/components/Button.tsx`
+- Result: `@src/components/Button.tsx`
 
-**Example:**
-```
-Please refactor @src/components/Button.tsx to use composition.
-Also update @tests/Button.test.tsx accordingly.
-```
+**Method 2: Native File Completion (Alternative)**
+- Press `<Ctrl-f>` in insert mode → native vim completion
+- Drill down: `src/<Ctrl-f> components/<Ctrl-f> Button.tsx`
 
-**How it works:**
-- `@` → Opens fuzzy picker showing all project files (configured in `lua/config/keymaps.lua:8`)
-- `<C-f>` → Triggers vim's native path completion (Ctrl-/ doesn't work in terminals)
-- The `@` stays in the buffer for LLM parsers to recognize workspace links
-- Paths are relative to nvim's current working directory
-
-**Tip:** For git-root-relative paths, set your nvim cwd to the repository root using `:cd` or a rooter plugin.
+**Implementation:** See `external/lazy-llm/nvim-llm-send-plugin/.config/nvim/lua/plugins/llm-send.lua:92-157`
 
 ## Dependencies
 
