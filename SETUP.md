@@ -76,6 +76,12 @@ dotfiles/<tool>/
 - **eza** - Modern replacement for ls with colors and git integration (✅ integrated)
 - **bat** - Cat clone with syntax highlighting and git integration (✅ integrated)
 - **yazi** - Terminal file manager
+- **glow** - Markdown preview in terminal, used by glow.nvim plugin (`:Glow` command)
+- **lynx** - Text-based web browser, required by CopilotChat.nvim for documentation lookup
+
+### 7a. Markdown Rendering
+- **glow.nvim** - Terminal-based markdown preview with `:Glow` command
+- **markview.nvim** - Enhanced in-buffer markdown rendering with tree-sitter (automatic preview)
 
 ### 8. System Monitoring
 - **gdu** - Disk usage analyzer with interactive interface

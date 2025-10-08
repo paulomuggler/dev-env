@@ -60,6 +60,8 @@ declare -a PHASE4_CLI_TOOLS=(
   "install-htop.sh"
   "install-tree.sh"
   "install-jq.sh"
+  "install-glow.sh"
+  "install-lynx.sh"
 )
 
 declare -a PHASE5_DEVELOPMENT=(
