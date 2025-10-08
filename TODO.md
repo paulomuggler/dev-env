@@ -15,3 +15,4 @@
 
 [x] add install-glow.sh script following modular install pattern
 
+[] fix color schemes in tmux and nvim clashing, looking broken
