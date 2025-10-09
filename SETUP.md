@@ -146,6 +146,44 @@ dotfiles/<tool>/
 ### 19. Font Support
 - **fontconfig** - Font configuration library
 
+### 20. LSP Servers & Development Tools
+All LSP servers are auto-installed by Mason when first launching Neovim. Configured in `dotfiles/nvim/.config/nvim/lua/plugins/lsp.lua`:
+
+**Language Servers:**
+- **lua-language-server** - Lua LSP
+- **typescript-language-server** - JavaScript/TypeScript LSP
+- **pyright** - Python LSP with type checking
+- **terraformls** - Terraform/HCL LSP
+- **ansible-language-server** - Ansible YAML LSP
+- **html-lsp** - HTML LSP
+- **css-lsp** - CSS LSP
+- **json-lsp** - JSON LSP
+- **yaml-language-server** - YAML LSP with schema validation
+- **bash-language-server** - Bash/Shell LSP
+- **omnisharp** - C# LSP (.NET)
+- **clangd** - C/C++ LSP with advanced features
+- **marksman** - Markdown LSP
+
+**Formatters:**
+- **prettier** - Multi-language formatter (JS/TS/HTML/CSS/JSON/YAML)
+- **stylua** - Lua formatter
+- **black** - Python formatter (PEP 8)
+- **isort** - Python import sorter
+- **shfmt** - Shell script formatter
+- **terraform-fmt** - Terraform formatter
+
+**Linters:**
+- **eslint_d** - JavaScript/TypeScript linter (fast daemon)
+- **pylint** - Python linter
+- **shellcheck** - Shell script linter
+- **yamllint** - YAML linter
+- **ansible-lint** - Ansible playbook linter
+
+**Usage:**
+- Run `:Mason` in Neovim to view and manage LSP servers
+- Run `:LspInfo` to see active LSP servers for current buffer
+- Run `:checkhealth mason` to verify Mason installation
+
 ## Phase 6: Configuration Packages (via Stow)
 
 ### 20. Shell Configuration

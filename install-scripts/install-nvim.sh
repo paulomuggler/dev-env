@@ -382,6 +382,20 @@ configure_nvim_package() {
   return 0
 }
 
+install_mason_lsp_servers() {
+  log info "=== Installing Mason LSP servers ==="
+  log info "Mason will auto-install LSP servers when you first open Neovim"
+  log info "LSP servers configured: lua_ls, tsserver, pyright, terraformls, ansiblels,"
+  log info "  html, cssls, jsonls, yamlls, bashls, omnisharp, clangd, marksman"
+  log info ""
+  log info "To manually trigger installation, run in Neovim:"
+  log info "  :Mason"
+  log info "  :MasonInstall <package-name>"
+
+  report_ok "Mason LSP configuration ready (auto-install on first Neovim launch)"
+  return 0
+}
+
 # -----------------------------------------------------------------------------
 # Main Installation Function
 # -----------------------------------------------------------------------------
@@ -403,6 +417,9 @@ install_nvim_full() {
 
   # Configuration
   configure_nvim_package || return 1
+
+  # Mason LSP servers (informational)
+  install_mason_lsp_servers || true
 
   return 0
 }
