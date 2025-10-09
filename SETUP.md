@@ -205,18 +205,49 @@ All LSP servers are auto-installed by Mason when first launching Neovim. Configu
 - **nvim package** - Default Neovim configuration
 - **lazyvim package** - LazyVim-specific settings and customizations with Catppuccin theme
 
-## Phase 7: LLM Integration (Future)
+## Phase 7: LLM Integration
 
-### 23. LLM CLI Tools (To be added)
-- **Claude Code CLI** - Anthropic's CLI interface
-- **OpenAI CLI** - OpenAI's command-line interface
-- **Gemini CLI** - Google's Gemini CLI interface
-- **Other LLM CLIs** - Additional chat interfaces as they become available
+### 23. LLM CLI Tools
+Modern agentic TUI tools for AI-assisted development. These tools integrate with lazy-llm for seamless tmux-based workflows.
 
-### 24. Custom Workspace Tools (To be added)
-- **tmux-llm-workspace** - Custom tmux session for LLM workflow
-- **nvim-prompt-buffer** - Prompt management utilities
-- **tmux-pane-pipe** - Scripts for piping between tmux panes
+- **Claude Code** - Anthropic's agentic coding assistant (Node.js 18+)
+  - Install: `npm install -g @anthropic-ai/claude-code`
+  - Command: `claude`
+  - Authentication: OAuth flow on first launch
+  - Features: Read/modify/run code, git workflows, natural language commands
+  - Integration: `lazy-llm -t claude`
+
+- **Gemini CLI** - Google's AI agent for terminal (Node.js 20+)
+  - Install: `npm install -g @google/gemini-cli`
+  - Command: `gemini`
+  - Authentication: Google account
+  - Features: 1M token context, Google Search grounding, MCP support
+  - Free tier: 60 req/min, 1000 req/day
+  - Integration: `lazy-llm -t gemini`
+
+- **OpenAI Codex** - OpenAI's lightweight coding agent
+  - Install: `npm install -g @openai/codex`
+  - Command: `codex`
+  - Authentication: Sign in with ChatGPT (Plus users: $50 credits, Free: $5 credits)
+  - Features: Local code operations, latest reasoning models
+  - Platform: macOS/Linux (Windows via WSL)
+  - Integration: `lazy-llm -t codex`
+
+- **Grok CLI** - xAI's AI agent for terminal (Node.js 18+)
+  - Install: `npm install -g @vibe-kit/grok-cli`
+  - Command: `grok`
+  - Authentication: xAI API key
+  - Features: 1M token context, natural language operations
+  - Models: grok-code-fast-1, grok-4-latest, grok-3-fast
+  - Integration: `lazy-llm -t grok`
+
+### 24. Custom Workspace Tools
+- **lazy-llm** - Tmux + Neovim workflow for AI-assisted development (✅ installed)
+  - Three-pane layout: AI tool, editor, prompt buffer
+  - Send prompts from buffer to AI with keybindings
+  - Git integration for change tracking
+  - File reference autocomplete with `@` symbol
+  - Usage: `lazy-llm [-s session] [-d directory] [-t ai_tool]`
 
 ## Installation Validation
 
