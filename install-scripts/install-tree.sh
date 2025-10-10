@@ -9,8 +9,15 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility)
-source "${SCRIPT_DIR}/../libs/utils.sh"
+# Source all libraries (bashlog, bash-utility, utils, platform)
+source "${SCRIPT_DIR}/../libs/linker.sh"
+
+# ============================================================================
+# PACKAGE CONFIGURATION
+# ============================================================================
+
+# Package names per platform (tree is same across platforms)
+PACKAGE_NAME=$(get_package_name "tree")
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
@@ -22,16 +29,16 @@ install_tree() {
   # Check if already installed
   if ! check_installed tree; then
     # Dry-run check
-    if dry_run_report "Would install tree via brew"; then
+    if dry_run_report "Would install ${PACKAGE_NAME} via package manager"; then
       return 0
     fi
 
-    # Install via Homebrew
-    log info "Installing tree via Homebrew..."
-    if brew install tree; then
+    # Install via package manager
+    log info "Installing ${PACKAGE_NAME}..."
+    if pkg_install "${PACKAGE_NAME}"; then
       report_changed "tree installed successfully"
     else
-      report_failed "Failed to install tree via brew"
+      report_failed "Failed to install tree"
       return 1
     fi
 
@@ -51,17 +58,8 @@ install_tree() {
 # Script Entry Point
 # -----------------------------------------------------------------------------
 
-# Ensure we're on macOS
-if ! is_macos; then
-  report_failed "This script currently only supports macOS"
-  exit 1
-fi
-
-# Ensure Homebrew is available
-if ! check::command_exists brew; then
-  report_failed "Homebrew is required but not installed. Please run install-homebrew.sh first"
-  exit 1
-fi
+# Validate platform and package manager
+validate_platform
 
 # Run installation
 install_tree

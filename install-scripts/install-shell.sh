@@ -9,8 +9,8 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility)
-source "${SCRIPT_DIR}/../libs/utils.sh"
+# Source all libraries (bashlog, bash-utility, utils, platform)
+source "${SCRIPT_DIR}/../libs/linker.sh"
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
@@ -44,11 +44,8 @@ install_shell_config() {
 # Script Entry Point
 # -----------------------------------------------------------------------------
 
-# Ensure we're on macOS
-if ! is_macos; then
-  report_failed "This script currently only supports macOS"
-  exit 1
-fi
+# Validate platform and package manager
+validate_platform
 
 # Run installation
 install_shell_config

@@ -9,8 +9,16 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility)
-source "${SCRIPT_DIR}/../libs/utils.sh"
+# Source all libraries (bashlog, bash-utility, utils, platform)
+source "${SCRIPT_DIR}/../libs/linker.sh"
+
+# ============================================================================
+# PACKAGE CONFIGURATION
+# ============================================================================
+
+# Package names per platform (rbenv is same across platforms)
+PACKAGE_NAME=$(get_package_name "rbenv")
+RUBY_BUILD=$(get_package_name "ruby-build")
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
@@ -22,16 +30,16 @@ install_rbenv() {
   # Check if already installed
   if ! check_installed rbenv; then
     # Dry-run check
-    if dry_run_report "Would install rbenv via brew"; then
+    if dry_run_report "Would install ${PACKAGE_NAME} and ${RUBY_BUILD} via package manager"; then
       return 0
     fi
 
-    # Install via Homebrew
-    log info "Installing rbenv via Homebrew..."
-    if brew install rbenv ruby-build; then
+    # Install via package manager
+    log info "Installing ${PACKAGE_NAME} and ${RUBY_BUILD}..."
+    if pkg_install "${PACKAGE_NAME}" && pkg_install "${RUBY_BUILD}"; then
       report_changed "rbenv installed successfully"
     else
-      report_failed "Failed to install rbenv via brew"
+      report_failed "Failed to install rbenv"
       return 1
     fi
 
@@ -85,17 +93,8 @@ install_rbenv() {
 # Script Entry Point
 # -----------------------------------------------------------------------------
 
-# Ensure we're on macOS
-if ! is_macos; then
-  report_failed "This script currently only supports macOS"
-  exit 1
-fi
-
-# Ensure Homebrew is available
-if ! check::command_exists brew; then
-  report_failed "Homebrew is required but not installed. Please run install-homebrew.sh first"
-  exit 1
-fi
+# Validate platform and package manager
+validate_platform
 
 # Run installation
 install_rbenv

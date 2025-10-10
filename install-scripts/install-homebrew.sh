@@ -9,8 +9,8 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility)
-source "${SCRIPT_DIR}/../libs/utils.sh"
+# Source all libraries (bashlog, bash-utility, utils, platform)
+source "${SCRIPT_DIR}/../libs/linker.sh"
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
@@ -65,9 +65,11 @@ install_homebrew() {
 # Script Entry Point
 # -----------------------------------------------------------------------------
 
-# Ensure we're on macOS
+# Homebrew is macOS-specific, so validate we're on macOS
 if ! is_macos; then
-  report_failed "This script currently only supports macOS"
+  report_failed "Homebrew is only available on macOS"
+  log error "Current platform: $(get_platform)"
+  log error "For Linux package managers, use your distribution's package manager directly"
   exit 1
 fi
 

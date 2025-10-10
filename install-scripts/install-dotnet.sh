@@ -9,8 +9,15 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility)
-source "${SCRIPT_DIR}/../libs/utils.sh"
+# Source all libraries (bashlog, bash-utility, utils, platform)
+source "${SCRIPT_DIR}/../libs/linker.sh"
+
+# ============================================================================
+# PACKAGE CONFIGURATION
+# ============================================================================
+
+# Package names per platform (dotnet is same across platforms)
+PACKAGE_NAME=$(get_package_name "dotnet")
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
@@ -22,14 +29,14 @@ install_dotnet() {
   # Check if already installed
   if ! check_installed dotnet; then
     # Dry-run check
-    if dry_run_report "Would install dotnet-sdk via brew cask"; then
+    if dry_run_report "Would install ${PACKAGE_NAME} via package manager cask"; then
       return 0
     fi
 
     # Install via Homebrew Cask
     log info "Installing .NET SDK via Homebrew..."
     log warn "This installation requires sudo access. You may be prompted for your password."
-    if brew install --cask dotnet-sdk; then
+    if pkg_install "${PACKAGE_NAME}" dotnet-sdk; then
       report_changed ".NET SDK installed successfully"
     else
       report_failed "Failed to install .NET SDK via brew"
@@ -55,17 +62,8 @@ install_dotnet() {
 # Script Entry Point
 # -----------------------------------------------------------------------------
 
-# Ensure we're on macOS
-if ! is_macos; then
-  report_failed "This script currently only supports macOS"
-  exit 1
-fi
-
-# Ensure Homebrew is available
-if ! check::command_exists brew; then
-  report_failed "Homebrew is required but not installed. Please run install-homebrew.sh first"
-  exit 1
-fi
+# Validate platform and package manager
+validate_platform
 
 # Run installation
 install_dotnet
