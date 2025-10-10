@@ -75,12 +75,8 @@ install_pyenv() {
   fi
 
   # Re-stow shell package to include pyenv.sh symlink
-  local dotfiles_dir
-  dotfiles_dir="$(cd "${SCRIPT_DIR}/../dotfiles" && pwd)"
-
-  if (cd "${dotfiles_dir}" && stow -R --dotfiles -t "${HOME}" shell); then
-    report_changed "Applied pyenv shell configuration"
-  else
+  # Use stow_package to ensure proper conflict handling
+  if ! stow_package "shell"; then
     report_failed "Failed to re-stow shell configuration"
     return 1
   fi
