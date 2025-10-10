@@ -4,14 +4,14 @@
 return {
   -- Mason: LSP server installer
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     opts = {
       ensure_installed = {
         -- Language Servers
         "lua-language-server", -- Lua
         "typescript-language-server", -- JavaScript/TypeScript
         "pyright", -- Python
-        "terraformls", -- Terraform
+        "terraform-ls", -- Terraform
         "ansible-language-server", -- Ansible
         "html-lsp", -- HTML
         "css-lsp", -- CSS
@@ -28,7 +28,7 @@ return {
         "black", -- Python formatter
         "isort", -- Python import sorter
         "shfmt", -- Shell script formatter
-        "terraform-fmt", -- Terraform formatter
+        -- Note: Terraform formatting is built into terraform-ls, no separate formatter needed
 
         -- Linters
         "eslint_d", -- JavaScript/TypeScript linter
@@ -91,7 +91,7 @@ return {
         },
 
         -- Terraform
-        terraformls = {},
+        terraformls = {}, -- Note: package is terraform-ls, but lspconfig uses terraformls
 
         -- Ansible
         ansiblels = {},

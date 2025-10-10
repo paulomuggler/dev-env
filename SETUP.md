@@ -115,17 +115,24 @@ dotfiles/<tool>/
 - **Ruby 3.3.0** - Specific Ruby version for stability
 - **neovim gem** - Ruby client for Neovim
 
-### 14. Java Environment
+### 14. .NET Environment
+- **.NET SDK** - Microsoft's .NET platform for C# development
+  - Required for C# development
+  - Required for OmniSharp LSP server (C# language support in Neovim)
+  - Installed via: `install-dotnet.sh`
+  - Verify: `dotnet --version`
+
+### 15. Java Environment
 - **OpenJDK** - Java development kit
 
-### 15. Additional Languages (LazyVim Dependencies)
+### 16. Additional Languages (LazyVim Dependencies)
 - **Rust** - Systems programming language (LSP and tool support)
 - **Go** - Google's programming language (LSP and tool support)
 - **Fish** - Alternative shell (required by some LazyVim plugins for enhanced terminal features)
 - **PHP & Composer** - PHP language and package manager (LazyVim LSP support)
 - **Julia** - Scientific computing language (LazyVim LSP support)
 
-### 16. Perl Environment
+### 17. Perl Environment
 - **Perl** - Perl language runtime
 - **cpanminus** - Perl package installer
 - **Perl Modules**:
@@ -135,18 +142,18 @@ dotfiles/<tool>/
 
 ## Phase 5: Development Dependencies
 
-### 17. Build & Analysis Tools (LazyVim Dependencies)
+### 18. Build & Analysis Tools (LazyVim Dependencies)
 - **ast-grep** - Structural search and replace tool (LazyVim syntax parsing and refactoring)
 - **luarocks** - Lua package manager (for Neovim Lua plugins)
 
-### 18. Document Processing (LazyVim Dependencies)
+### 19. Document Processing (LazyVim Dependencies)
 - **ghostscript** - PostScript and PDF interpreter (LazyVim document rendering/preview)
 - **tectonic** - Modern TeX/LaTeX engine (LazyVim LaTeX document compilation)
 
-### 19. Font Support
+### 20. Font Support
 - **fontconfig** - Font configuration library
 
-### 20. LSP Servers & Development Tools
+### 21. LSP Servers & Development Tools
 All LSP servers are auto-installed by Mason when first launching Neovim. Configured in `dotfiles/nvim/.config/nvim/lua/plugins/lsp.lua`:
 
 **Language Servers:**
@@ -186,7 +193,7 @@ All LSP servers are auto-installed by Mason when first launching Neovim. Configu
 
 ## Phase 6: Configuration Packages (via Stow)
 
-### 20. Shell Configuration
+### 22. Shell Configuration
 - **shell package** - `.bashrc`, `.bash_profile`, `.bash_aliases`, `.bash_functions` (✅ integrated)
 - **shell.d/ pattern** - Modular tool-specific configurations (✅ integrated)
 - **PATH management** - Dedicated `.bash_path` file for all PATH modifications

@@ -65,6 +65,7 @@ declare -a PHASE4_CLI_TOOLS=(
 )
 
 declare -a PHASE5_DEVELOPMENT=(
+  "install-dotnet.sh"
   "install-nvim.sh"
   "install-lazyllm.sh"
 )
