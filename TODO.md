@@ -11,7 +11,7 @@
 
 [x] update lazy-llm submodule to latest (includes @ path completion feature)
 
-[] review and finalize LazyVim health check fixes (lynx, neovim npm, tmux TERM)
+[x] review and finalize LazyVim health check fixes (lynx, neovim npm, tmux TERM)
 
 [x] add install-glow.sh script following modular install pattern
 
@@ -29,4 +29,4 @@
 
 [] add install scripts for compression tools like gzip, xz, tar, etc.
 
-
+[x] add fzf-lua and new keybindings to pick files including hidden and .gitignore files
