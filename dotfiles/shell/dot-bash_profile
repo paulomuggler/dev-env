@@ -6,7 +6,9 @@
 # -----------------------------------------------------------------------------
 
 # Silence the "default interactive shell is now zsh" warning on macOS.
-export BASH_SILENCE_DEPRECATION_WARNING=1
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  export BASH_SILENCE_DEPRECATION_WARNING=1
+fi
 
 # -----------------------------------------------------------------------------
 # ENVIRONMENT VARIABLES

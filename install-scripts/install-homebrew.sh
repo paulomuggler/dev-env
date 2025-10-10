@@ -58,6 +58,20 @@ install_homebrew() {
   # shellcheck disable=SC2016
   add_to_path_file "Homebrew" 'eval "$(/opt/homebrew/bin/brew shellenv)"' "brew"
 
+  # Link homebrew shell configuration into shell.d/
+  log info "Configuring Homebrew shell integration..."
+  if ! link_shell_config "homebrew"; then
+    report_failed "Failed to link Homebrew shell configuration"
+    return 1
+  fi
+
+  # Re-stow shell package to include homebrew.sh symlink
+  # Use stow_package to ensure proper conflict handling
+  if ! stow_package "shell"; then
+    report_failed "Failed to re-stow shell configuration"
+    return 1
+  fi
+
   return 0
 }
 

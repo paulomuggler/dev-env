@@ -3,25 +3,41 @@
 # This file is sourced by .bash_profile
 
 # User's local bin directory
-export PATH=~/bin:$PATH
+if [[ -d "${HOME}/bin" ]]; then
+  export PATH="${HOME}/bin:${PATH}"
+fi
 
-# Homebrew
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# User's local bin (common for pip, cargo, npm, etc.)
+if [[ -d "${HOME}/.local/bin" ]]; then
+  export PATH="${HOME}/.local/bin:${PATH}"
+fi
+
+# Homebrew (macOS)
+if [[ "$(uname -s)" == "Darwin" ]] && [[ -x "/opt/homebrew/bin/brew" ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
 
 # rbenv (Ruby version manager)
-eval "$(rbenv init - bash)"
+if command -v rbenv >/dev/null 2>&1; then
+  eval "$(rbenv init - bash)"
+fi
 
-# Windsurf/Codeium
-export PATH="/Users/paulomoreira/.codeium/windsurf/bin:$PATH"
+# Windsurf/Codeium (macOS)
+if [[ -d "${HOME}/.codeium/windsurf/bin" ]]; then
+  export PATH="${HOME}/.codeium/windsurf/bin:${PATH}"
+fi
 
-# .NET
-export PATH=$PATH:/usr/local/share/dotnet/
+# .NET (macOS)
+if [[ "$(uname -s)" == "Darwin" ]] && [[ -d "/usr/local/share/dotnet" ]]; then
+  export PATH="${PATH}:/usr/local/share/dotnet/"
+fi
 
 # Ruby Gems
-export PATH="$(gem environment gemdir)/bin:$PATH"
+if command -v gem >/dev/null 2>&1; then
+  export PATH="$(gem environment gemdir)/bin:${PATH}"
+fi
 
-# Homebrew OpenJDK
-export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
-
-# User's local bin
-export PATH="/Users/paulomoreira/.local/bin/:$PATH"
+# Homebrew OpenJDK (macOS)
+if [[ "$(uname -s)" == "Darwin" ]] && [[ -d "/opt/homebrew/opt/openjdk/bin" ]]; then
+  export PATH="/opt/homebrew/opt/openjdk/bin:${PATH}"
+fi

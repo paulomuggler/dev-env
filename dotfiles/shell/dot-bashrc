@@ -39,11 +39,6 @@ if [[ -d ~/.shell.d ]]; then
   done
 fi
 
-# Initialize Homebrew's bash completion.
-if [[ -r /opt/homebrew/etc/profile.d/bash_completion.sh ]]; then
-  source /opt/homebrew/etc/profile.d/bash_completion.sh
-fi
-
 # Link the 'set_win_title' function to Starship's pre-command hook
 # to automatically update the terminal window title.
 starship_precmd_user_func="set_win_title"
@@ -52,7 +47,7 @@ starship_precmd_user_func="set_win_title"
 # MISC & USER-SPECIFIC
 # -----------------------------------------------------------------------------
 
-# Source iTerm2 shell integration if it exists.
-if [[ -f "${HOME}/.iterm2_shell_integration.bash" ]]; then
+# Source iTerm2 shell integration if it exists (macOS only).
+if [[ "$(uname -s)" == "Darwin" ]] && [[ -f "${HOME}/.iterm2_shell_integration.bash" ]]; then
   source "${HOME}/.iterm2_shell_integration.bash"
 fi
