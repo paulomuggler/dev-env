@@ -23,9 +23,10 @@
 
 [x] enable C# LSP server (DONE - .NET SDK installed, OmniSharp ready)
 
-[] fix the surround/leap/flit/search keybainding conflicts (e.g., `s` key, `gs`, s/S f/F t/T) etc.
+[] fix the surround/leap/flit/search keybinding conflicts (e.g., `s` key, `gs`, s/S f/F t/T) etc.
 
-[] research and consider adding nvim-ufo for better code folding (
+[] research and consider adding nvim-ufo for better code folding
 
+[] add install scripts for compression tools like gzip, xz, tar, etc.
 
 

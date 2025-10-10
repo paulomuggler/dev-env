@@ -20,9 +20,10 @@ oldfiles/
 # Test outputs
 test_*
 
-# AI Prompt
+# AI prompt scratch file
 prompt.md
 
 # Claude local settings
 settings.local.json
-prompts
+# prompts
+test-csharp
