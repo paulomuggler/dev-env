@@ -11,7 +11,7 @@ We want to add Ubuntu (and later Arch/Omarchy) support to the dev-env project wh
 - 99% of install scripts just call package manager - easily abstracted
 - Dotfile structure identical across platforms (XDG standard)
 - Shell configs are portable bash
-- Only difference: which package manager to call
+- Only difference: which package manager to call, and some package names
 
 **When we'd need branches:**
 - Significant platform-specific code blocks appearing everywhere

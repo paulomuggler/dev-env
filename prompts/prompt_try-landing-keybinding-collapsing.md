@@ -65,3 +65,13 @@ vim.keymap.set({ "n", "x", "o" }, "F", function() smart_find(true)  end, { desc 
 
 That’s it. One key, one char, one landing choice. Fewer bindings, same power.
 
+
+
+OK: based on this suggestion by ChatGPT, here's what I want to try out: 
+
+- collapse f/F and t/T bindings into the f/F key, adding the "smart" landing motion feature 
+- move the current s/S binding (leap seek) to t/T, freeing up s
+- put 'surround' bindings from mini.surround back on  the S key.
+
+
+show me what that would look like.
