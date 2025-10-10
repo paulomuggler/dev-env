@@ -7,21 +7,12 @@
 # - bash-utility (libs/bash-utility/): Bash standard library
 #
 # This file provides ONLY functions not available in the above libraries.
+#
+# NOTE: This file is sourced by libs/linker.sh - DO NOT source directly
 # -----------------------------------------------------------------------------
 
-# Get script directory
+# Get script directory (for internal use)
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-
-# Source bashlog for logging
-source "${SCRIPT_DIR}/bashlog/log.sh"
-
-# Source bash-utility for standard library functions
-# Source each module with absolute paths
-BASH_UTILITY_DIR="${SCRIPT_DIR}/bash-utility"
-# shellcheck disable=SC1091,SC1090
-for module in "${BASH_UTILITY_DIR}"/src/*.sh; do
-    source "${module}"
-done
 
 # -----------------------------------------------------------------------------
 # State Reporting Functions (Ansible-inspired)
