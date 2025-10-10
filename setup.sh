@@ -13,9 +13,8 @@ set -uo pipefail  # Exit on undefined vars and pipe failures
 # Get the directory where this script is located (project root)
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility, colr.sh)
-# Note: utils.sh will set SCRIPT_DIR to libs/, so we use PROJECT_ROOT
-source "${PROJECT_ROOT}/libs/utils.sh"
+# Source all libraries (bashlog, bash-utility, utils, platform)
+source "${PROJECT_ROOT}/libs/linker.sh"
 
 # -----------------------------------------------------------------------------
 # Configuration
@@ -31,8 +30,8 @@ declare -a SKIPPED_INSTALLS=()
 
 # Installation phases
 # Each phase contains scripts that must run in order
+# Note: install-homebrew.sh is only for macOS and will be conditionally added
 declare -a PHASE1_FOUNDATION=(
-  "install-homebrew.sh"
   "install-stow.sh"
 )
 
@@ -233,7 +232,7 @@ main() {
   log info "environment with modern CLI tools, shell configurations, and more."
   log info ""
   log info "Installation will proceed in phases:"
-  log info "  • Phase 1: Foundation (Homebrew, Stow)"
+  log info "  • Phase 1: Foundation (Package Manager, Stow)"
   log info "  • Phase 2: Shell Configuration"
   log info "  • Phase 3: Core Tools (Git, Starship, Tmux)"
   log info "  • Phase 4: CLI Productivity Tools"
@@ -241,12 +240,25 @@ main() {
   log info ""
 
   # Platform check
-  if ! is_macos; then
-    log error "This setup currently only supports macOS"
-    exit 1
-  fi
+  validate_platform
 
-  log info "Platform: macOS $(sw_vers -productVersion)"
+  # Display platform info
+  local platform
+  platform=$(get_platform)
+  case "$platform" in
+    macos)
+      log info "Platform: macOS $(sw_vers -productVersion 2>/dev/null || echo 'unknown')"
+      ;;
+    ubuntu)
+      log info "Platform: Ubuntu/Debian ($(lsb_release -ds 2>/dev/null || echo 'unknown version'))"
+      ;;
+    arch)
+      log info "Platform: Arch Linux"
+      ;;
+    *)
+      log info "Platform: $platform"
+      ;;
+  esac
   log info "Installation directory: ${PROJECT_ROOT}"
   log info ""
 
@@ -269,6 +281,11 @@ main() {
     fi
   else
     log info "Auto-confirming installation (--yes flag provided)"
+  fi
+
+  # Add Homebrew to Phase 1 if on macOS
+  if is_macos; then
+    PHASE1_FOUNDATION=("install-homebrew.sh" "${PHASE1_FOUNDATION[@]}")
   fi
 
   # Run installation phases
