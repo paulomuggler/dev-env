@@ -5,7 +5,7 @@
 
 [x] study and consider submitting the flit/leap fix PR
 
-[] fix rbenv loading error in .bash_path (line 12: rbenv: command not found)
+[x] fix rbenv loading error in .bash_path (line 12: rbenv: command not found)
 
 [x] clean up tmux plugin submodule deletions from git status (dotfiles/tmux/.config/tmux/plugins/*)
 
@@ -31,4 +31,4 @@
 
 [x] add fzf-lua and new keybindings to pick files including hidden and .gitignore files
 
-[] port the setup away from iTerm2 into something like kitty, wezterm, or some other multiplatform emulator with similar features and better configurabilty. iTerm2 uses pList entries, portability of configs sucks. Also osx only, no support for kitty (image rendering on terminal), wezterm (lua config, cross-platform), alacritty (yaml config, cross-platform, gpu accelerated), etc. Essential to have 'Hotkey Window'-like functionality
+[] port the setup away from iTerm2 into something like kitty, wezterm, or some other multiplatform emulator with similar features and better configurabilty. iTerm2 uses pList entries, portability of configs sucks. Also osx only, no support for kitty (image rendering on terminal), wezterm (lua config, cross-platform), alacritty (yaml config, cross-platform, gpu accelerated), etc. Essential to have 'Hotkey Window'-like functionality. Also, our terminal emulator setup is 0% managed by the setup done here, and we want that to be 100%, so the dev-env- bootstrap already gives a good t. emulator configged
