@@ -11,7 +11,7 @@
 
 [x] update lazy-llm submodule to latest (includes @ path completion feature)
 
-[x] review and finalize LazyVim health check fixes (lynx, neovim npm, tmux TERM)
+[x] review and finalize LazyVim health check fixes (lynx, neovim npm, tmux TERM) (WONT DO, not fixing all, rbenv and CPANM not needed for now)
 
 [x] add install-glow.sh script following modular install pattern
 
@@ -23,10 +23,12 @@
 
 [x] enable C# LSP server (DONE - .NET SDK installed, OmniSharp ready)
 
-[] fix the surround/leap/flit/search keybinding conflicts (e.g., `s` key, `gs`, s/S f/F t/T) etc.
+[x] fix the surround/leap/flit/search keybinding conflicts (e.g., `s` key, `gs`, s/S f/F t/T) etc. (WONT DO, just use gz bindings for surround, `s` for leap).
 
 [] research and consider adding nvim-ufo for better code folding
 
-[] add install scripts for compression tools like gzip, xz, tar, etc.
+[x] add install scripts for compression tools like gzip, xz, tar, etc.
 
 [x] add fzf-lua and new keybindings to pick files including hidden and .gitignore files
+
+[] port the setup away from iTerm2 into something like kitty, wezterm, or some other multiplatform emulator with similar features and better configurabilty. iTerm2 uses pList entries, portability of configs sucks. Also osx only, no support for kitty (image rendering on terminal), wezterm (lua config, cross-platform), alacritty (yaml config, cross-platform, gpu accelerated), etc. Essential to have 'Hotkey Window'-like functionality

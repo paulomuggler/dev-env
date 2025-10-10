@@ -62,6 +62,10 @@ declare -a PHASE4_CLI_TOOLS=(
   "install-jq.sh"
   "install-glow.sh"
   "install-lynx.sh"
+  "install-xz.sh"
+  "install-zstd.sh"
+  "install-p7zip.sh"
+  "install-unrar.sh"
 )
 
 declare -a PHASE5_DEVELOPMENT=(

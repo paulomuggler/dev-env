@@ -91,48 +91,58 @@ dotfiles/<tool>/
 ### 9. Navigation & History
 - **zoxide** - Smart directory jumper (cd replacement) (✅ integrated)
 
-### 10. Git Enhancement
+### 10. Compression Tools
+- **xz** - LZMA compression (.xz, .lzma files) - Very efficient compression
+- **zstd** - Zstandard compression (.zst files) - Modern, fast compression
+- **p7zip** - 7-Zip archives (.7z files) - High compression ratio
+- **unrar** - RAR archive extraction (.rar files) - WinRAR archives
+- Note: gzip, bzip2, tar, zip/unzip are pre-installed on macOS
+
+### 11. Git Enhancement
 - **lazygit** - Terminal UI for git with intuitive interface
 
 ## Phase 4: Language Environments
 
-### 11. Python Environment
+### 12. Python Environment
 - **Python 3.13** - Latest Python version
 - **Virtual Environments** - Separate venvs for each Neovim configuration:
   - `~/.venvs/nvim/` - Default Neovim Python provider
   - `~/.venvs/lazyvim/` - LazyVim Python provider
 - **pynvim** - Python client for Neovim (installed in each venv)
 
-### 12. Node.js Environment
+### 13. Node.js Environment
 - **Node.js** - JavaScript runtime (latest LTS)
 - **npm packages**:
   - `neovim` - Node.js client for Neovim
   - `@mermaid-js/mermaid-cli` - Diagram generation tool
 
-### 13. Ruby Environment
-- **Ruby** - Ruby language runtime
-- **rbenv** - Ruby version manager
-- **Ruby 3.3.0** - Specific Ruby version for stability
-- **neovim gem** - Ruby client for Neovim
+### 14. Ruby Environment
+- **rbenv** - Ruby version manager (✅ integrated with shell.d/)
+  - Installed via: `install-rbenv.sh`
+  - Shell integration: Automatic initialization in `.shell.d/rbenv.sh`
+  - Usage: `rbenv install 3.3.0`, `rbenv global 3.3.0`
+- **ruby-build** - rbenv plugin for installing Ruby versions (installed with rbenv)
+- **Ruby 3.3.0** - Recommended Ruby version for stability
+- **neovim gem** - Ruby client for Neovim (installed via install-nvim.sh)
 
-### 14. .NET Environment
+### 15. .NET Environment
 - **.NET SDK** - Microsoft's .NET platform for C# development
   - Required for C# development
   - Required for OmniSharp LSP server (C# language support in Neovim)
   - Installed via: `install-dotnet.sh`
   - Verify: `dotnet --version`
 
-### 15. Java Environment
+### 16. Java Environment
 - **OpenJDK** - Java development kit
 
-### 16. Additional Languages (LazyVim Dependencies)
+### 17. Additional Languages (LazyVim Dependencies)
 - **Rust** - Systems programming language (LSP and tool support)
 - **Go** - Google's programming language (LSP and tool support)
 - **Fish** - Alternative shell (required by some LazyVim plugins for enhanced terminal features)
 - **PHP & Composer** - PHP language and package manager (LazyVim LSP support)
 - **Julia** - Scientific computing language (LazyVim LSP support)
 
-### 17. Perl Environment
+### 18. Perl Environment
 - **Perl** - Perl language runtime
 - **cpanminus** - Perl package installer
 - **Perl Modules**:
