@@ -26,8 +26,13 @@ PACKAGE_NAME=$(get_package_name "bat")
 install_bat() {
   log info "=== Installing bat ==="
 
-  # Check if already installed
-  if ! check_installed bat; then
+  # Check if already installed (Ubuntu installs as 'batcat', not 'bat')
+  local cmd_name="bat"
+  if is_ubuntu && ! check::command_exists bat && check::command_exists batcat; then
+    cmd_name="batcat"
+  fi
+
+  if ! check_installed "$cmd_name"; then
     # Dry-run check
     if dry_run_report "Would install ${PACKAGE_NAME} via package manager"; then
       return 0
@@ -42,10 +47,17 @@ install_bat() {
       return 1
     fi
 
-    # Verify installation
-    if ! check_installed bat; then
-      report_failed "bat installation verification failed"
-      return 1
+    # Verify installation (check for batcat on Ubuntu, bat elsewhere)
+    if is_ubuntu; then
+      if ! check_installed batcat; then
+        report_failed "bat installation verification failed (looking for batcat command)"
+        return 1
+      fi
+    else
+      if ! check_installed bat; then
+        report_failed "bat installation verification failed"
+        return 1
+      fi
     fi
   fi
 

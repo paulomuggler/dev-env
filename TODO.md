@@ -19,7 +19,7 @@
 
 [x] add more LSP servers, test and configure LSPs in nvim
 
-[] prepare repo for linux support (Debian/Ubuntu/Omarchy ?): package install function on scripts can be abstracted per-branch (e.g., using brew for osx, apt-get for debian/ubuntu, etc.), but install scripts could mostly stay the same and just call the utility package install wrapper that is different per-platform; of course, individual scripts still retain the ability to implement their own platform-specific logic as needed).
+[x] prepare repo for linux support (Debian/Ubuntu/Omarchy ?): package install function on scripts can be abstracted per-branch (e.g., using brew for osx, apt-get for debian/ubuntu, etc.), but install scripts could mostly stay the same and just call the utility package install wrapper that is different per-platform; of course, individual scripts still retain the ability to implement their own platform-specific logic as needed).
 
 [x] enable C# LSP server (DONE - .NET SDK installed, OmniSharp ready)
 

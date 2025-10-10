@@ -141,11 +141,26 @@ setup_python_provider() {
     return 0
   fi
 
+  # On Ubuntu/Debian, ensure python3-venv is installed
+  if is_ubuntu; then
+    if ! dpkg -l python3-venv 2>/dev/null | grep -q "^ii"; then
+      log info "Installing python3-venv package (required on Ubuntu/Debian)..."
+      if ! pkg_install "python3-venv"; then
+        log error "Failed to install python3-venv"
+        log error "Please run: sudo apt install python3-venv"
+        return 1
+      fi
+    fi
+  fi
+
   log info "Creating Python virtual environment..."
   mkdir -p "$HOME/.venvs"
 
   if ! python3 -m venv "$venv_dir"; then
     report_failed "Failed to create Python venv"
+    if is_ubuntu; then
+      log error "Try: sudo apt install python3-venv"
+    fi
     return 1
   fi
 

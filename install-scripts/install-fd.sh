@@ -31,8 +31,13 @@ PACKAGE_NAME=$(get_package_name "fd" PACKAGE_NAMES)
 install_fd() {
   log info "=== Installing fd ==="
 
-  # Check if already installed
-  if ! check_installed fd; then
+  # Check if already installed (Ubuntu installs as 'fdfind', not 'fd')
+  local cmd_name="fd"
+  if is_ubuntu && ! check::command_exists fd && check::command_exists fdfind; then
+    cmd_name="fdfind"
+  fi
+
+  if ! check_installed "$cmd_name"; then
     # Dry-run check
     if dry_run_report "Would install ${PACKAGE_NAME} via package manager"; then
       return 0
@@ -47,10 +52,17 @@ install_fd() {
       return 1
     fi
 
-    # Verify installation
-    if ! check_installed fd; then
-      report_failed "fd installation verification failed"
-      return 1
+    # Verify installation (check for fdfind on Ubuntu, fd elsewhere)
+    if is_ubuntu; then
+      if ! check_installed fdfind; then
+        report_failed "fd installation verification failed (looking for fdfind command)"
+        return 1
+      fi
+    else
+      if ! check_installed fd; then
+        report_failed "fd installation verification failed"
+        return 1
+      fi
     fi
   fi
 
