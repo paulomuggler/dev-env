@@ -1,0 +1,193 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------------------------------
+# sort-todo - Sort TODO markdown files with open tasks at the top
+# -----------------------------------------------------------------------------
+# Usage:
+#   sort-todo [FILE]              # Sort specific file in-place
+#   sort-todo                     # Sort all TODO.md files in current directory tree
+#
+# Format:
+#   - Open tasks: [] item text
+#   - Completed tasks: [x] item text
+#   - Preserves blank lines between tasks
+#   - Sorts: open tasks first, then completed tasks
+# -----------------------------------------------------------------------------
+
+set -euo pipefail
+
+# ANSI color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Helper functions
+info() {
+  echo -e "${BLUE}[INFO]${NC} $*"
+}
+
+success() {
+  echo -e "${GREEN}[OK]${NC} $*"
+}
+
+error() {
+  echo -e "${RED}[ERROR]${NC} $*" >&2
+}
+
+warn() {
+  echo -e "${YELLOW}[WARN]${NC} $*"
+}
+
+# Sort a single TODO file
+sort_todo_file() {
+  local file="$1"
+
+  if [[ ! -f "$file" ]]; then
+    error "File not found: $file"
+    return 1
+  fi
+
+  if [[ ! -r "$file" ]]; then
+    error "File not readable: $file"
+    return 1
+  fi
+
+  info "Sorting: $file"
+
+  # Create temp file
+  local tmpfile
+  tmpfile=$(mktemp)
+
+  # Read file into arrays
+  local open_tasks=()
+  local completed_tasks=()
+  local current_task=""
+  local is_open=false
+
+  while IFS= read -r line; do
+    # Check if line starts a new task
+    if [[ "$line" =~ ^(\[\]|\[x\]|\[X\]).*$ ]]; then
+      # Save previous task if exists
+      if [[ -n "$current_task" ]]; then
+        if $is_open; then
+          open_tasks+=("$current_task")
+        else
+          completed_tasks+=("$current_task")
+        fi
+      fi
+
+      # Start new task
+      current_task="$line"
+
+      # Determine if open or completed
+      if [[ "$line" =~ ^\[\][[:space:]] ]]; then
+        is_open=true
+      else
+        is_open=false
+      fi
+    elif [[ -n "$current_task" ]]; then
+      # Continuation of current task (indented or related lines)
+      current_task="$current_task"$'\n'"$line"
+    elif [[ -z "$line" ]]; then
+      # Preserve blank lines between tasks
+      if [[ -n "$current_task" ]]; then
+        if $is_open; then
+          open_tasks+=("$current_task")
+        else
+          completed_tasks+=("$current_task")
+        fi
+        current_task=""
+      fi
+    else
+      # Non-task line at start of file (headers, etc.)
+      # Write directly to output
+      if [[ -z "$current_task" ]] && [[ ${#open_tasks[@]} -eq 0 ]] && [[ ${#completed_tasks[@]} -eq 0 ]]; then
+        echo "$line" >> "$tmpfile"
+      fi
+    fi
+  done < "$file"
+
+  # Don't forget the last task
+  if [[ -n "$current_task" ]]; then
+    if $is_open; then
+      open_tasks+=("$current_task")
+    else
+      completed_tasks+=("$current_task")
+    fi
+  fi
+
+  # Write sorted tasks to temp file
+  local count_open=${#open_tasks[@]}
+  local count_completed=${#completed_tasks[@]}
+
+  # Write open tasks first
+  for task in "${open_tasks[@]}"; do
+    echo "$task" >> "$tmpfile"
+    echo "" >> "$tmpfile"  # Blank line separator
+  done
+
+  # Write completed tasks
+  for task in "${completed_tasks[@]}"; do
+    echo "$task" >> "$tmpfile"
+    echo "" >> "$tmpfile"  # Blank line separator
+  done
+
+  # Replace original file with sorted version
+  if mv "$tmpfile" "$file"; then
+    success "Sorted: $count_open open, $count_completed completed tasks"
+  else
+    error "Failed to write sorted file: $file"
+    rm -f "$tmpfile"
+    return 1
+  fi
+
+  return 0
+}
+
+# Main function
+main() {
+  if [[ $# -eq 0 ]]; then
+    # No arguments: find and sort all TODO.md files in tree
+    info "Finding TODO.md files in current directory tree..."
+
+    local files=()
+    while IFS= read -r -d '' file; do
+      files+=("$file")
+    done < <(find . -type f -name "TODO.md" -print0 2>/dev/null)
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+      warn "No TODO.md files found"
+      return 0
+    fi
+
+    info "Found ${#files[@]} TODO.md file(s)"
+    echo ""
+
+    local success_count=0
+    local fail_count=0
+
+    for file in "${files[@]}"; do
+      if sort_todo_file "$file"; then
+        ((success_count++))
+      else
+        ((fail_count++))
+      fi
+      echo ""
+    done
+
+    echo "======================================"
+    if [[ $fail_count -eq 0 ]]; then
+      success "All $success_count file(s) sorted successfully"
+    else
+      warn "Sorted $success_count file(s), $fail_count failed"
+      return 1
+    fi
+  else
+    # Sort specific file
+    sort_todo_file "$1"
+  fi
+}
+
+# Run main function
+main "$@"
