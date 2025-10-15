@@ -3,7 +3,7 @@
 
 # Set theme (Catppuccin Mocha when available, fallback to Monokai Extended)
 # --theme="Catppuccin Mocha"
---theme="Monokai Extended"
+--theme="gruvbox-light"
 
 # Show line numbers, Git modifications, and file header by default
 --style="numbers,changes,header"
