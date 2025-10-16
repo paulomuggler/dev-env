@@ -22,6 +22,7 @@ source "${PROJECT_ROOT}/libs/linker.sh"
 
 # Command-line options
 AUTO_YES=false
+INSTALL_LLM_TOOLS=false
 
 # Track installation results
 declare -a SUCCESSFUL_INSTALLS=()
@@ -40,38 +41,79 @@ declare -a PHASE2_SHELL=(
 )
 
 declare -a PHASE3_CORE_TOOLS=(
-  "install-git.sh"
-  "install-starship.sh"
-  "install-tmux.sh"
+  "install-git.sh"          # Version control
+  "install-gh.sh"           # GitHub CLI
+  "install-nerd-fonts.sh"   # Patched fonts (required for starship, etc.)
+  "install-starship.sh"     # Modern prompt
+  "install-tmux.sh"         # Terminal multiplexer
 )
 
 declare -a PHASE4_CLI_TOOLS=(
-  "install-bat.sh"
-  "install-eza.sh"
-  "install-fzf.sh"
-  "install-zoxide.sh"
-  "install-ripgrep.sh"
-  "install-fd.sh"
-  "install-lazygit.sh"
-  "install-yazi.sh"
-  "install-bottom.sh"
-  "install-gdu.sh"
-  "install-htop.sh"
-  "install-tree.sh"
-  "install-jq.sh"
-  "install-glow.sh"
-  "install-lynx.sh"
-  "install-xz.sh"
-  "install-zstd.sh"
-  "install-p7zip.sh"
-  "install-unrar.sh"
+  # Modern replacements for classic Unix tools
+  "install-bat.sh"          # cat replacement with syntax highlighting
+  "install-eza.sh"          # ls replacement with colors and git integration
+  "install-fd.sh"           # find replacement
+  "install-ripgrep.sh"      # grep replacement
+  "install-sd.sh"           # sed replacement
+  "install-dust.sh"         # du replacement
+  "install-duf.sh"          # df replacement
+  # "install-dog.sh"        # dig replacement (DISABLED: brew formula dead)
+  "install-xh.sh"           # httpie replacement
+
+  # Navigation and search
+  "install-fzf.sh"          # Fuzzy finder
+  "install-zoxide.sh"       # Smart cd
+
+  # Development tools
+  "install-lazygit.sh"      # Git TUI
+  "install-ast-grep.sh"     # Structural code search
+
+  # File management
+  "install-yazi.sh"         # Terminal file manager
+
+  # System monitoring
+  "install-bottom.sh"       # System monitor (btm)
+  "install-gdu.sh"          # Disk usage analyzer
+  "install-ncdu.sh"         # NCurses disk usage
+  "install-htop.sh"         # Process viewer
+
+  # Utilities
+  "install-tree.sh"         # Directory tree view
+  "install-jq.sh"           # JSON processor
+  "install-glow.sh"         # Markdown renderer
+  "install-lynx.sh"         # Text web browser
+
+  # Compression tools
+  "install-xz.sh"           # XZ compression
+  "install-zstd.sh"         # Zstandard compression
+  "install-p7zip.sh"        # 7-Zip
+  "install-unrar.sh"        # RAR extraction
 )
 
 declare -a PHASE5_DEVELOPMENT=(
-  "install-rbenv.sh"
-  "install-dotnet.sh"
-  "install-nvim.sh"
-  "install-lazyllm.sh"
+  # Language environments
+  "install-pyenv.sh"        # Python version manager
+  "install-node.sh"         # Node.js runtime
+  "install-rbenv.sh"        # Ruby version manager
+  "install-dotnet.sh"       # .NET SDK
+
+  # Editor and LLM tools
+  "install-nvim.sh"         # Neovim
+  "install-lazyllm.sh"      # LLM CLI integration
+)
+
+# Optional macOS-specific tools (safely skipped on other platforms)
+declare -a PHASE6_MACOS_OPTIONAL=(
+  "install-iterm2.sh"       # Modern terminal emulator for macOS
+  "install-aerospace.sh"    # i3-like tiling window manager for macOS
+)
+
+# Optional LLM CLI tools (install manually as needed)
+declare -a PHASE7_LLM_OPTIONAL=(
+  "install-claude-code.sh"  # Claude Code CLI
+  "install-gemini-cli.sh"   # Gemini CLI
+  "install-grok-cli.sh"     # Grok CLI
+  "install-openai-codex.sh" # OpenAI Codex CLI
 )
 
 # -----------------------------------------------------------------------------
@@ -234,9 +276,13 @@ main() {
   log info "Installation will proceed in phases:"
   log info "  • Phase 1: Foundation (Package Manager, Stow)"
   log info "  • Phase 2: Shell Configuration"
-  log info "  • Phase 3: Core Tools (Git, Starship, Tmux)"
+  log info "  • Phase 3: Core Tools (Git, GitHub CLI, Fonts, Starship, Tmux)"
   log info "  • Phase 4: CLI Productivity Tools"
-  log info "  • Phase 5: Development Environment (Neovim)"
+  log info "  • Phase 5: Development Environment (Python, Node, Ruby, Neovim)"
+  log info "  • Phase 6: Optional macOS Tools (if on macOS)"
+  if [[ "${INSTALL_LLM_TOOLS}" == "true" ]]; then
+    log info "  • Phase 7: Optional LLM CLI Tools (--llm flag provided)"
+  fi
   log info ""
 
   # Platform check
@@ -296,6 +342,16 @@ main() {
   run_phase "PHASE 4: CLI Productivity Tools" "${PHASE4_CLI_TOOLS[@]}"
   run_phase "PHASE 5: Development Environment" "${PHASE5_DEVELOPMENT[@]}"
 
+  # Run macOS-specific tools if on macOS
+  if is_macos && [[ ${#PHASE6_MACOS_OPTIONAL[@]} -gt 0 ]]; then
+    run_phase "PHASE 6: Optional macOS Tools" "${PHASE6_MACOS_OPTIONAL[@]}"
+  fi
+
+  # Run LLM CLI tools if requested
+  if [[ "${INSTALL_LLM_TOOLS}" == "true" ]] && [[ ${#PHASE7_LLM_OPTIONAL[@]} -gt 0 ]]; then
+    run_phase "PHASE 7: Optional LLM CLI Tools" "${PHASE7_LLM_OPTIONAL[@]}"
+  fi
+
   # Print summary and next steps
   print_summary
   print_next_steps
@@ -321,11 +377,16 @@ while [[ $# -gt 0 ]]; do
       AUTO_YES=true
       shift
       ;;
+    --llm)
+      INSTALL_LLM_TOOLS=true
+      shift
+      ;;
     -h|--help)
       echo "Usage: $0 [OPTIONS]"
       echo ""
       echo "Options:"
       echo "  -y, --yes    Skip confirmation prompt"
+      echo "  --llm        Install optional LLM CLI tools (Claude, Gemini, Grok, OpenAI)"
       echo "  -h, --help   Show this help message"
       echo ""
       exit 0
