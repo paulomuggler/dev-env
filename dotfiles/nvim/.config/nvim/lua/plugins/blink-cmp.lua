@@ -1,27 +1,19 @@
 -- blink.cmp configuration
--- Replaces default path provider with custom one that supports @ workspace completion
+-- Show hidden files in native path completion (/, ./, ~/)
 
 return {
 	{
 		"saghen/blink.cmp",
 		opts = function(_, opts)
-			-- Ensure sources table exists
 			opts.sources = opts.sources or {}
-			opts.sources.default = opts.sources.default or {}
 			opts.sources.providers = opts.sources.providers or {}
 
-			-- Replace path provider with our custom workspace-aware version
-			opts.sources.providers.path = {
-				name = "Path",
-				module = "blink-cmp-path-workspace", -- Our custom module
-				score_offset = 3,
-				opts = {
-					-- Options are set in the custom module with smart defaults
-					-- @ paths: workspace root + hidden files
-					-- / ./ ~/ paths: relative to current file + hidden files
-					-- All: trailing slashes preserved for directories
-				},
-			}
+			-- Show hidden files in path completion
+			if not opts.sources.providers.path then
+				opts.sources.providers.path = {}
+			end
+			opts.sources.providers.path.opts = opts.sources.providers.path.opts or {}
+			opts.sources.providers.path.opts.show_hidden_files_by_default = true
 
 			return opts
 		end,
