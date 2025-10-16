@@ -1,0 +1,201 @@
+# Tmux Configuration
+# Modern tmux setup with sensible defaults
+
+# ============================================================================
+# General Settings
+# ============================================================================
+
+# Enable true color support
+set -g default-terminal "screen-256color"
+set -ga terminal-overrides ",xterm-256color:Tc"
+
+# Set prefix to Ctrl-a (more ergonomic than Ctrl-b)
+unbind C-b
+set -g prefix C-a
+bind C-a send-prefix
+
+# Start window and pane numbering at 1
+set -g base-index 1
+setw -g pane-base-index 1
+
+# Renumber windows when one is closed
+set -g renumber-windows on
+
+# Increase scrollback buffer size
+set -g history-limit 100000
+
+# Enable mouse support
+set -g mouse on
+
+# Don't wait for escape sequences (set to 10 for better compatibility)
+set -sg escape-time 10
+
+# Refresh status bar more frequently
+set -g status-interval 5
+
+# Display tmux messages for 4 seconds
+set -g display-time 4000
+
+# Focus events enabled for terminals that support them
+set -g focus-events on
+
+# Super useful when using "grouped sessions" and multi-monitor setup
+setw -g aggressive-resize on
+
+# ============================================================================
+# Key Bindings
+# ============================================================================
+
+# Reload config file
+bind r source-file ~/.config/tmux/tmux.conf \; display "Config reloaded!"
+
+# Split panes using | and -
+bind | split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+unbind '"'
+unbind %
+
+# Switch panes using Alt-arrow without prefix
+# These will be handled by vim-tmux-navigator for smart vim/tmux navigation
+# See below in the vim-tmux-navigator section
+
+# Switch windows using Shift-arrow without prefix
+bind -n S-Left previous-window
+bind -n S-Right next-window
+
+# Vim-style pane navigation
+bind h select-pane -L
+bind j select-pane -D
+bind k select-pane -U
+bind l select-pane -R
+
+# Resize panes with vim-style keys
+bind -r H resize-pane -L 5
+bind -r J resize-pane -D 5
+bind -r K resize-pane -U 5
+bind -r L resize-pane -R 5
+
+# Create new window in current directory
+bind c new-window -c "#{pane_current_path}"
+
+# Quick pane cycling
+unbind ^A
+bind ^A select-pane -t :.+
+
+# ============================================================================
+# Visual Settings
+# ============================================================================
+
+# Status bar position
+set -g status-position bottom
+
+# Status bar colors (will be overridden by Catppuccin theme if installed)
+set -g status-style "bg=default,fg=white"
+
+# Window status format
+setw -g window-status-current-style "fg=black,bg=white,bold"
+setw -g window-status-style "fg=white,bg=default"
+
+# Pane border colors
+set -g pane-border-style "fg=brightblack"
+set -g pane-active-border-style "fg=white"
+
+# ============================================================================
+# Copy Mode (Vim-style)
+# ============================================================================
+
+# Use vim keybindings in copy mode
+setw -g mode-keys vi
+
+# Setup 'v' to begin selection as in Vim
+bind -T copy-mode-vi v send -X begin-selection
+bind -T copy-mode-vi y send -X copy-pipe-and-cancel "pbcopy"
+bind -T copy-mode-vi r send -X rectangle-toggle
+
+# Update default binding of `Enter` to also use copy-pipe
+unbind -T copy-mode-vi Enter
+bind -T copy-mode-vi Enter send -X copy-pipe-and-cancel "pbcopy"
+
+# ============================================================================
+# Activity Monitoring
+# ============================================================================
+
+# Monitor activity in other windows
+setw -g monitor-activity on
+set -g visual-activity on
+
+# ============================================================================
+# Plugins (TPM - Tmux Plugin Manager)
+# ============================================================================
+
+# List of plugins
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-sensible'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+set -g @plugin 'tmux-plugins/tmux-yank'
+set -g @plugin 'tmux-plugins/tmux-prefix-highlight'
+set -g @plugin 'tmux-plugins/tmux-open'
+set -g @plugin 'tmux-plugins/tmux-copycat'
+set -g @plugin 'sainnhe/tmux-fzf'
+set -g @plugin 'catppuccin/tmux'
+set -g @plugin 'christoomey/vim-tmux-navigator'
+
+# ============================================================================
+# Plugin Configuration
+# ============================================================================
+
+# --- tmux-resurrect ---
+# Restore additional programs
+set -g @resurrect-processes 'nvim vim ssh lazygit'
+set -g @resurrect-strategy-nvim 'session'
+set -g @resurrect-capture-pane-contents 'on'
+
+# --- tmux-continuum ---
+# Auto-restore sessions
+set -g @continuum-restore 'on'
+set -g @continuum-save-interval '15'  # Save every 15 minutes
+
+# --- Catppuccin theme ---
+set -g @catppuccin_flavour 'latte'  # or latte, frappe, macchiato
+
+# Catppuccin status modules
+set -g @catppuccin_window_left_separator ""
+set -g @catppuccin_window_right_separator " "
+set -g @catppuccin_window_middle_separator " █"
+set -g @catppuccin_window_number_position "right"
+
+set -g @catppuccin_window_default_fill "number"
+set -g @catppuccin_window_default_text "#W"
+
+set -g @catppuccin_window_current_fill "number"
+set -g @catppuccin_window_current_text "#W"
+
+set -g @catppuccin_status_modules_right "directory session"
+set -g @catppuccin_status_left_separator  " "
+set -g @catppuccin_status_right_separator ""
+set -g @catppuccin_status_fill "icon"
+set -g @catppuccin_status_connect_separator "no"
+
+set -g @catppuccin_directory_text "#{pane_current_path}"
+
+# --- tmux-fzf ---
+# Trigger tmux-fzf with prefix + F
+TMUX_FZF_LAUNCH_KEY="F"
+
+# --- tmux-prefix-highlight ---
+# Show when prefix is active
+set -g @prefix_highlight_show_copy_mode 'on'
+set -g @prefix_highlight_copy_mode_attr 'fg=black,bg=yellow,bold'
+set -g @prefix_highlight_show_sync_mode 'on'
+set -g @prefix_highlight_sync_mode_attr 'fg=black,bg=green,bold'
+
+# --- vim-tmux-navigator ---
+# Smart navigation is provided by Ctrl+hjkl (configured in the plugin)
+# Alt+arrows are disabled due to conflicts with nvim default bindings and terminal keycodes
+# Use Ctrl+hjkl for reliable cross-pane navigation everywhere
+
+# ============================================================================
+# Initialize TPM (keep this line at the very bottom)
+# ============================================================================
+run '~/.config/tmux/plugins/tpm/tpm'

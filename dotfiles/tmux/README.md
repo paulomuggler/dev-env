@@ -1,6 +1,20 @@
 # Tmux Configuration
 
-Modern tmux setup with TPM plugin manager, sensible defaults, and beautiful Catppuccin theme.
+Modern tmux setup based on [Oh my tmux!](https://github.com/gpakosz/.tmux) with TPM plugin manager, sensible defaults, and comprehensive plugin ecosystem.
+
+## Overview
+
+This configuration uses **gpakosz's Oh my tmux!** as the base configuration, which provides a well-tested, feature-rich foundation. We then layer our custom settings and plugins on top via `.tmux.conf.local`.
+
+## Architecture
+
+```
+.config/tmux/
+├── tmux.conf        → Main config from gpakosz/.tmux (DO NOT EDIT)
+└── tmux.conf.local  → Custom overrides and plugins (EDIT THIS)
+```
+
+The main `tmux.conf` is the stock Oh my tmux! configuration and should never be modified directly. All customizations go in `.tmux.conf.local`.
 
 ## Features
 
@@ -10,26 +24,20 @@ Modern tmux setup with TPM plugin manager, sensible defaults, and beautiful Catp
 - **Vim-style navigation** - hjkl pane switching, visual mode selection
 - **Smart window management** - Auto-renumbering, current path preservation
 - **Fast escape time** - 10ms for better responsiveness
+- **True color support** - 24-bit color automatically detected
+- **Battery status** - Shows battery percentage and charging status
+- **Uptime display** - System uptime in status bar
+- **SSH awareness** - Special handling for SSH sessions
 
 ### Plugin Manager (TPM)
 All plugins managed via [TPM (Tmux Plugin Manager)](https://github.com/tmux-plugins/tpm)
 
 **Plugin Management:**
 - `prefix + I` - Install new plugins
-- `prefix + U` - Update all plugins
-- `prefix + alt + u` - Remove/uninstall plugins
+- `prefix + U` - Update all plugins (custom binding in Oh my tmux!)
+- `prefix + alt + u` - Remove/uninstall plugins (custom binding in Oh my tmux!)
 
 ## Installed Plugins
-
-### 🎨 Theme & Visual
-- **[catppuccin/tmux](https://github.com/catppuccin/tmux)** - Beautiful Catppuccin Mocha theme
-  - Matches nvim, bat, lazygit color scheme
-  - Shows current directory and session name
-  - Clean, modern status bar
-
-- **[tmux-prefix-highlight](https://github.com/tmux-plugins/tmux-prefix-highlight)** - Visual indicator when prefix is active
-  - Shows copy mode in yellow
-  - Shows sync mode in green
 
 ### 💾 Session Persistence
 - **[tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)** - Save and restore sessions
@@ -53,9 +61,6 @@ All plugins managed via [TPM (Tmux Plugin Manager)](https://github.com/tmux-plug
   - `prefix + Ctrl-d` - Find numbers
 
 ### 🚀 Productivity
-- **[tmux-sensible](https://github.com/tmux-plugins/tmux-sensible)** - Sensible default settings
-  - Industry-standard tmux configuration
-
 - **[tmux-open](https://github.com/tmux-plugins/tmux-open)** - Open files and URLs from tmux
   - Highlight and open files/URLs with `o` in copy mode
 
@@ -67,6 +72,17 @@ All plugins managed via [TPM (Tmux Plugin Manager)](https://github.com/tmux-plug
   - `Ctrl-h/j/k/l` - Navigate between vim splits and tmux panes
   - Works with LazyVim/Neovim
 
+- **[tmux-grimoire](https://github.com/navahas/tmux-grimoire)** - Popup shells
+  - `prefix + f` - Open main popup shell
+  - `prefix + Shift-F` - Open ephemeral popup shell
+  - `prefix + C` - Close popup shell
+  - Customizable floating terminal windows
+
+### 🎨 Visual Enhancement
+- **[tmux-prefix-highlight](https://github.com/tmux-plugins/tmux-prefix-highlight)** - Visual indicator when prefix is active
+  - Shows copy mode in yellow
+  - Shows sync mode in green
+
 ## Key Bindings
 
 ### Prefix Key
@@ -75,24 +91,29 @@ All plugins managed via [TPM (Tmux Plugin Manager)](https://github.com/tmux-plug
 
 ### Window Management
 - `prefix + c` - Create new window (in current directory)
+- `prefix + C` - Create new session
 - `prefix + ,` - Rename window
+- `prefix + $` - Rename session
 - `prefix + n/p` - Next/previous window
+- `prefix + Tab` - Last window
 - `Shift + Left/Right` - Switch windows (no prefix needed)
 
 ### Pane Management
-- `prefix + |` - Split pane vertically (in current directory)
-- `prefix + -` - Split pane horizontally (in current directory)
+- `prefix + -` - Split pane horizontally (Oh my tmux! default)
+- `prefix + _` - Split pane vertically (Oh my tmux! default)
 - `prefix + h/j/k/l` - Navigate panes (vim-style)
-- `Alt + Arrow keys` - Navigate panes (no prefix needed)
 - `prefix + H/J/K/L` - Resize panes (vim-style, repeatable)
 - `prefix + Ctrl-a` - Cycle through panes
+- `prefix + <` / `prefix + >` - Move pane left/right
+- `prefix + +` - Maximize/restore pane
 
 ### Copy Mode (Vim-style)
-- `prefix + [` - Enter copy mode
+- `prefix + Enter` - Enter copy mode
 - `v` - Begin selection (in copy mode)
+- `C-v` - Rectangle selection
 - `y` - Yank selection to clipboard
 - `r` - Rectangle toggle
-- `q` - Exit copy mode
+- `Escape` - Exit copy mode
 
 ### Session Management
 - `prefix + Ctrl-s` - Save session (tmux-resurrect)
@@ -101,31 +122,48 @@ All plugins managed via [TPM (Tmux Plugin Manager)](https://github.com/tmux-plug
 
 ### Other
 - `prefix + r` - Reload configuration
+- `prefix + e` - Edit configuration (opens `.tmux.conf.local`)
+- `prefix + m` - Toggle mouse mode (with notification)
 - `prefix + ?` - Show all key bindings
+- `prefix + t` - Show clock
 
 ## Configuration Highlights
 
-### Catppuccin Theme
-- **Flavor**: Mocha (dark theme)
-- **Status modules**: Directory, session name
-- **Consistent with**: nvim, lazygit, bat, yazi
+### Oh my tmux! Features
+- **Intelligent theme** - Adapts to terminal capabilities
+- **Status bar widgets** - Username, hostname, uptime, battery
+- **SSH detection** - Highlights SSH sessions
+- **Clipboard integration** - Works across platforms
+- **Automatic TPM management** - Plugins install/update automatically
 
 ### Session Persistence
 - **Auto-save**: Every 15 minutes
 - **Auto-restore**: On tmux start
 - **Restored programs**: nvim, vim, ssh, lazygit
 - **Pane contents**: Captured and restored
+- **Nvim session strategy**: Full session restoration
 
 ### Performance
 - **Escape time**: 10ms (fast vim mode switching)
-- **History**: 100,000 lines
-- **Status refresh**: Every 5 seconds
+- **History**: 100,000 lines (increased from default 5000)
+- **Status refresh**: Every 5 seconds (via Oh my tmux!)
+- **Display time**: 4 seconds for messages
+- **Focus events**: Enabled for better terminal integration
+
+### Smart Behavior
+- **Current path retention**: New windows/panes open in current directory
+- **Window renumbering**: Gaps automatically filled
+- **Activity monitoring**: Visual notification of activity in other windows
+- **Aggressive resize**: Better multi-monitor support
 
 ## Files
 
 ```
 dotfiles/tmux/
-└── .config/tmux/tmux.conf  → ~/.config/tmux/tmux.conf
+└── .config/tmux/
+    ├── tmux.conf        → Main Oh my tmux! config (from gpakosz)
+    ├── tmux.conf.local  → Custom configuration (this is where you edit)
+    └── tmux.conf.backup → Backup of previous config
 ```
 
 ## Post-Installation
@@ -133,8 +171,9 @@ dotfiles/tmux/
 After running `install-tmux.sh`:
 
 1. **Start tmux**: `tmux`
-2. **Install plugins**: `prefix + I` (if not auto-installed)
+2. **Plugins auto-install**: Oh my tmux! will automatically install and update plugins
 3. **Verify**: All plugins should load automatically
+4. **Manual install** (if needed): `prefix + I`
 
 ## Plugin Updates
 
@@ -144,34 +183,65 @@ prefix + U                # Update all plugins
 prefix + alt + u          # Remove unlisted plugins
 ```
 
+Oh my tmux! automatically updates plugins on launch and reload by default.
+
 ## Customization
 
-Edit `.config/tmux/tmux.conf` in this package:
+### Editing Configuration
 
 ```bash
-# Change theme flavor
-set -g @catppuccin_flavour 'latte'  # or frappe, macchiato, mocha
+# Inside tmux - easiest method
+prefix + e                # Opens .tmux.conf.local in $EDITOR
 
-# Disable auto-restore
+# Or edit directly
+nvim ~/Projects/dev-env/dotfiles/tmux/.config/tmux/tmux.conf.local
+
+# Then reload
+prefix + r
+```
+
+### Common Customizations
+
+All edits go in `.tmux.conf.local`. Use `#!important` to override Oh my tmux! settings:
+
+```bash
+# Example: Change history limit
+set -g history-limit 50000 #!important
+
+# Example: Disable auto-restore
 set -g @continuum-restore 'off'
 
-# Change save interval
-set -g @continuum-save-interval '30'  # 30 minutes
+# Example: Change theme colors
+tmux_conf_theme_colour_1="#1e1e2e"    # Catppuccin background
+tmux_conf_theme_colour_4="#89b4fa"    # Catppuccin blue
+
+# Example: Change status bar content
+tmux_conf_theme_status_left=" ❐ #S | ↑#{?uptime_h, #{uptime_h}h,} "
 ```
 
-Then re-stow:
+### Adding Plugins
+
+Edit `.tmux.conf.local` and add in the TPM section:
+
 ```bash
-cd ~/Projects/dev-env/dotfiles
-stow -R --dotfiles tmux
+set -g @plugin 'new-plugin-name/repo'
 ```
+
+Then reload config (`prefix + r`) or run `prefix + I` to install.
+
+### Theme Customization
+
+Oh my tmux! provides extensive theming through variables in `.tmux.conf.local`. See the file comments for all available options.
+
+Optional: Enable Catppuccin theme by uncommenting the plugin section in `.tmux.conf.local`.
 
 ## Troubleshooting
 
 ### Plugins not loading
 ```bash
 # Reinstall TPM
-rm -rf ~/.tmux/plugins/tpm
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+rm -rf ~/.config/tmux/plugins/tpm
+git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm
 
 # Inside tmux
 prefix + I
@@ -180,9 +250,25 @@ prefix + I
 ### Colors look wrong
 ```bash
 # Check terminal supports true color
-echo $TERM  # Should be screen-256color or tmux-256color
+echo $COLORTERM  # Should be 'truecolor' or '24bit'
+
+# Check tmux version
+tmux -V  # Should be 3.2 or higher
 
 # In your terminal emulator, enable true color support
+```
+
+### Configuration not loading
+```bash
+# Check for syntax errors
+tmux source-file ~/.config/tmux/tmux.conf
+
+# Check if .tmux.conf.local exists
+ls -la ~/.config/tmux/tmux.conf.local
+
+# Verify stow is working
+cd ~/Projects/dev-env/dotfiles
+stow -n --dotfiles tmux  # Dry run to check
 ```
 
 ### Vim navigation not working
@@ -190,9 +276,32 @@ Ensure `vim-tmux-navigator` is installed in both tmux and nvim:
 - Tmux: Already configured in this package
 - Nvim: LazyVim includes this by default
 
+### Mouse mode not working
+```bash
+# Inside tmux, toggle mouse mode
+prefix + m
+
+# Or check if it's enabled
+tmux show-options -g mouse
+```
+
+## Lazy-LLM Integration
+
+This configuration is designed to work seamlessly with lazy-llm tool:
+- Smart pane navigation preserves lazy-llm workflow
+- Copy mode integration for prompt management
+- Session persistence across lazy-llm sessions
+- Popup shells (grimoire) for quick commands
+
 ## Documentation
 
-- [Tmux Manual](https://man.openbsd.org/tmux)
-- [TPM GitHub](https://github.com/tmux-plugins/tpm)
-- [Catppuccin for tmux](https://github.com/catppuccin/tmux)
-- [Awesome Tmux Plugins](https://github.com/rothgar/awesome-tmux)
+- **[Oh my tmux! README](https://github.com/gpakosz/.tmux)** - Base configuration documentation
+- [Tmux Manual](https://man.openbsd.org/tmux) - Official tmux manual
+- [TPM GitHub](https://github.com/tmux-plugins/tpm) - Plugin manager documentation
+- [Awesome Tmux Plugins](https://github.com/rothgar/awesome-tmux) - Plugin directory
+
+## Credits
+
+- Base configuration: [Oh my tmux!](https://github.com/gpakosz/.tmux) by Gregory Pakosz
+- Plugin management: [TPM](https://github.com/tmux-plugins/tpm)
+- Theme inspiration: [Catppuccin](https://github.com/catppuccin/catppuccin)
