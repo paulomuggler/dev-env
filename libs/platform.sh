@@ -117,7 +117,7 @@ get_package_name() {
 
   # Try to get from array
   local -n arr="$array_name"
-  if [[ -v "arr[$platform]" ]]; then
+  if [[ -n "${arr[$platform]:-}" ]]; then
     echo "${arr[$platform]}"
   else
     # Not in array, return default
