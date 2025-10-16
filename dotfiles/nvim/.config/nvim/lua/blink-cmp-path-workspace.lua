@@ -77,7 +77,9 @@ local function get_at_text_edit_ranges(context, at_path)
 		start_col = at_start
 	end
 
-	local next_letter_is_slash = context.line:sub(context.cursor[2] + 1, context.cursor[2] + 1) == '/'
+	-- Check if there's already a trailing slash after cursor
+	local next_char = context.line:sub(context.cursor[2] + 1, context.cursor[2] + 1)
+	local has_trailing_slash = next_char == '/'
 
 	return {
 		file = {
@@ -86,7 +88,8 @@ local function get_at_text_edit_ranges(context, at_path)
 		},
 		directory = {
 			start = { line = context.cursor[1] - 1, character = start_col },
-			['end'] = { line = context.cursor[1] - 1, character = context.cursor[2] + (next_letter_is_slash and 1 or 0) },
+			-- If there's already a slash after cursor, replace it to avoid double slash
+			['end'] = { line = context.cursor[1] - 1, character = context.cursor[2] + (has_trailing_slash and 1 or 0) },
 		},
 	}
 end
@@ -204,14 +207,22 @@ function workspace_path:get_completions(context, callback)
 		local after_last_slash = at_path:match('[^/]*$')
 		-- If there's text after last slash (and it's not empty), user is typing
 		is_typing = after_last_slash and #after_last_slash > 0
+
+		-- DEBUG: Log the mode detection
+		vim.notify(
+			string.format('@ path: "%s", after_slash: "%s", typing: %s', at_path, after_last_slash or 'nil', is_typing),
+			vim.log.levels.INFO
+		)
 	end
 
 	local candidates_promise
 	if is_at_context and is_typing then
 		-- Fuzzy mode: show all files recursively
+		vim.notify('Using FUZZY mode', vim.log.levels.WARN)
 		candidates_promise = get_recursive_candidates(context, dirname, include_hidden, self.opts, at_path)
 	elseif is_at_context then
 		-- Sequential mode: show current directory only
+		vim.notify('Using SEQUENTIAL mode', vim.log.levels.WARN)
 		candidates_promise = get_at_candidates(context, dirname, include_hidden, self.opts, at_path)
 	else
 		-- Standard path completion
