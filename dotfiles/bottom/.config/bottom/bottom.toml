@@ -41,8 +41,8 @@ basic = false
 # Widget styling
 theme = "default"
 
-[row]
 # Default layout: CPU, Memory, Network, Disk, Temperature, Process list
+[[row]]
 [[row.child]]
 type = "cpu"
 
