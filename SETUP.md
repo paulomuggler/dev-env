@@ -51,6 +51,8 @@ dotfiles/<tool>/
 
 ### 3. Version Control
 - **Git** - Version control system, fundamental for development workflow (✅ integrated)
+- **GitHub CLI (gh)** - Official GitHub command-line tool for PRs, issues, and workflows (✅ integrated)
+- **GitLab CLI (glab)** - Official GitLab command-line tool for MRs, issues, and pipelines (✅ integrated)
 
 ### 4. Text Editing & IDE
 - **Neovim** - Modern vim-based editor, core of the development environment
@@ -73,6 +75,7 @@ dotfiles/<tool>/
 - **fd** - Fast file finder, better than find
 - **tree** - Display directory structure in tree format
 - **jq** - Command-line JSON processor for parsing and formatting
+- **b2** - Backblaze B2 cloud storage CLI for backup and file management (✅ integrated)
 - **eza** - Modern replacement for ls with colors and git integration (✅ integrated)
 - **bat** - Cat clone with syntax highlighting and git integration (✅ integrated)
 - **yazi** - Terminal file manager

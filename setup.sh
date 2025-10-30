@@ -43,6 +43,7 @@ declare -a PHASE2_SHELL=(
 declare -a PHASE3_CORE_TOOLS=(
   "install-git.sh"          # Version control
   "install-gh.sh"           # GitHub CLI
+  "install-glab.sh"         # GitLab CLI
   "install-nerd-fonts.sh"   # Patched fonts (required for starship, etc.)
   "install-starship.sh"     # Modern prompt
   "install-tmux.sh"         # Terminal multiplexer
@@ -80,6 +81,7 @@ declare -a PHASE4_CLI_TOOLS=(
   # Utilities
   "install-tree.sh"         # Directory tree view
   "install-jq.sh"           # JSON processor
+  "install-b2.sh"           # Backblaze B2 cloud storage CLI
   "install-glow.sh"         # Markdown renderer
   "install-lynx.sh"         # Text web browser
 
@@ -276,7 +278,7 @@ main() {
   log info "Installation will proceed in phases:"
   log info "  • Phase 1: Foundation (Package Manager, Stow)"
   log info "  • Phase 2: Shell Configuration"
-  log info "  • Phase 3: Core Tools (Git, GitHub CLI, Fonts, Starship, Tmux)"
+  log info "  • Phase 3: Core Tools (Git, GitHub/GitLab CLI, Fonts, Starship, Tmux)"
   log info "  • Phase 4: CLI Productivity Tools"
   log info "  • Phase 5: Development Environment (Python, Node, Ruby, Neovim)"
   log info "  • Phase 6: Optional macOS Tools (if on macOS)"
