@@ -13,6 +13,10 @@ Installed via `install-b2.sh` script which:
 - Configures shell integration
 - Sets up helpful aliases and functions
 
+### Python 3.14 Compatibility
+
+If you're using Python 3.14, b2-tools 4.4.2 has a known buffer overflow bug in the `rst2ansi` library's terminal size detection. The `b2.sh` configuration automatically applies a workaround by setting `COLUMNS` and `LINES` environment variables to bypass the buggy code. This fix will be removed once b2-tools is updated for Python 3.14 compatibility.
+
 ## Configuration
 
 ### Account Setup
