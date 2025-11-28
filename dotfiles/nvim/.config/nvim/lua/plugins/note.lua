@@ -1,0 +1,1 @@
+../../../../../../external/lazy-llm/nvim-note-plugin/.config/nvim/lua/plugins/note.lua

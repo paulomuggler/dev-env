@@ -54,6 +54,9 @@ return {
     end, { desc = "Grep word (with glob)" })
   end,
   keys = {
+    -- Disable fzf-lua's <leader>gd - we use gitsigns inline diff instead
+    { "<leader>gd", false },
+
     -- ALL files: include hidden + gitignored (but exclude noisy git internals)
     {
       "<leader>fA",
