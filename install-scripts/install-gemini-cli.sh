@@ -9,8 +9,8 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source utility functions (loads bashlog, bash-utility)
-source "${SCRIPT_DIR}/../libs/utils.sh"
+# Source utility functions (loads bashlog, bash-utility, platform, utils)
+source "${SCRIPT_DIR}/../libs/linker.sh"
 
 # -----------------------------------------------------------------------------
 # Main Installation Function
