@@ -128,15 +128,33 @@ EOF
 # -----------------------------------------------------------------------------
 
 setup_ssh_recovery() {
-  log info "=== Verifying SSH Recovery Access ==="
+  log info "=== Setting up SSH Recovery Access ==="
 
-  # Check if SSH is enabled
+  # For headless operation, SSH is critical - enable it
   if systemctl is-enabled sshd &>/dev/null || systemctl is-enabled ssh &>/dev/null; then
-    report_ok "SSH service is enabled (recovery path available)"
+    report_ok "SSH service already enabled"
   else
-    log warn "SSH service is not enabled"
-    log warn "Consider enabling SSH for recovery: sudo systemctl enable --now sshd"
-    report_skipped "SSH not enabled (recommend enabling for recovery)"
+    if dry_run_report "Would enable sshd service"; then
+      return 0
+    fi
+
+    log info "Enabling SSH service for recovery access..."
+    if sudo systemctl enable --now sshd; then
+      report_changed "SSH service enabled"
+    else
+      report_failed "Failed to enable SSH service"
+      log warn "You may need to install openssh: sudo pacman -S openssh"
+    fi
+  fi
+
+  # Verify SSH is running
+  if systemctl is-active sshd &>/dev/null; then
+    report_ok "SSH service is running"
+  else
+    if ! is_dry_run; then
+      log warn "SSH service is not running, attempting to start..."
+      sudo systemctl start sshd || true
+    fi
   fi
 
   # Check if Tailscale is available
