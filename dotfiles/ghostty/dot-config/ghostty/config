@@ -1,0 +1,55 @@
+# -----------------------------------------------------------------------------
+# Ghostty Configuration - dev-env additions
+#
+# This config is meant to supplement Omarchy's Ghostty theming.
+# Omarchy manages colors via its theming system (colors.toml + Aether).
+# We only add dev-env specific settings here.
+#
+# Ghostty docs: https://ghostty.org/docs
+# -----------------------------------------------------------------------------
+
+# =============================================================================
+# Quick Terminal (Dropdown)
+# =============================================================================
+# Ghostty 1.2+ supports native quick terminal on Wayland/Hyprland
+# This creates a Guake/iTerm2 hotkey window-style dropdown terminal
+
+# Position: top of screen (like traditional dropdown terminals)
+quick-terminal-position = top
+
+# Use the main/focused screen
+quick-terminal-screen = main
+
+# Fast animation (100ms) - snappy feel
+quick-terminal-animation-duration = 0.1
+
+# Full keyboard focus when opened
+quick-terminal-keyboard-interactivity = true
+
+# Global hotkey to toggle quick terminal (F12 is traditional)
+# This works even when Ghostty isn't focused
+keybind = global:f12=toggle_quick_terminal
+
+# =============================================================================
+# Window Behavior
+# =============================================================================
+
+# Start maximized for the main window (not quick terminal)
+# window-decoration = false  # Uncomment if you prefer no title bar
+
+# Confirm before closing with running processes
+confirm-close-surface = true
+
+# =============================================================================
+# Shell Integration
+# =============================================================================
+
+# Enable shell integration for better prompt detection
+shell-integration = detect
+
+# =============================================================================
+# Performance
+# =============================================================================
+
+# Use GPU rendering (default on, but explicit for clarity)
+# gtk-prefer-wayland-backend = true  # Wayland-first on Hyprland

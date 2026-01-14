@@ -77,6 +77,41 @@ is_supported_platform() {
   [[ "$platform" == "macos" || "$platform" == "ubuntu" || "$platform" == "arch" ]]
 }
 
+# -----------------------------------------------------------------------------
+# Omarchy / Hyprland Detection
+# -----------------------------------------------------------------------------
+
+# Check if running Omarchy (Arch + Hyprland + Omarchy marker)
+is_omarchy() {
+  is_arch && [[ -d "${HOME}/.local/share/omarchy" ]]
+}
+
+# Check if running under Wayland
+is_wayland() {
+  [[ -n "${WAYLAND_DISPLAY:-}" ]] || [[ "${XDG_SESSION_TYPE:-}" == "wayland" ]]
+}
+
+# Check if Hyprland is the compositor
+is_hyprland() {
+  [[ "${XDG_CURRENT_DESKTOP:-}" == "Hyprland" ]] || \
+  [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] || \
+  command -v hyprctl &>/dev/null && hyprctl version &>/dev/null 2>&1
+}
+
+# Get display server type
+# Returns: wayland, x11, tty, or unknown
+get_display_server() {
+  if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+    echo "wayland"
+  elif [[ -n "${DISPLAY:-}" ]]; then
+    echo "x11"
+  elif [[ -t 0 ]] && [[ "$(tty)" == /dev/tty* ]]; then
+    echo "tty"
+  else
+    echo "unknown"
+  fi
+}
+
 # Check if appropriate package manager is available
 has_package_manager() {
   case "$(get_platform)" in
@@ -148,6 +183,31 @@ pkg_install() {
       return 1
       ;;
   esac
+}
+
+# Install package from AUR (Arch Linux only)
+# Uses yay (Omarchy default) or paru as fallback
+aur_install() {
+  local package="$1"
+
+  if ! is_arch; then
+    log error "AUR packages only available on Arch Linux"
+    return 1
+  fi
+
+  # Prefer yay (Omarchy default), fall back to paru
+  local aur_helper=""
+  if check::command_exists yay; then
+    aur_helper="yay"
+  elif check::command_exists paru; then
+    aur_helper="paru"
+  else
+    log error "No AUR helper found (yay or paru required)"
+    return 1
+  fi
+
+  log info "Installing ${package} from AUR via ${aur_helper}..."
+  "${aur_helper}" -S --noconfirm "$package"
 }
 
 # Update package manager cache
@@ -239,9 +299,14 @@ export -f get_platform
 export -f is_ubuntu
 export -f is_arch
 export -f is_supported_platform
+export -f is_omarchy
+export -f is_wayland
+export -f is_hyprland
+export -f get_display_server
 export -f has_package_manager
 export -f get_package_name
 export -f pkg_install
+export -f aur_install
 export -f pkg_update
 export -f pkg_installed
 export -f validate_platform

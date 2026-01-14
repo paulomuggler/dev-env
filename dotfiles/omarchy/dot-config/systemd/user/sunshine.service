@@ -1,0 +1,31 @@
+# -----------------------------------------------------------------------------
+# Sunshine Systemd User Service
+#
+# Runs Sunshine as a user service, starting after the graphical session.
+# This ensures Hyprland is running before Sunshine tries to capture.
+#
+# Enable: systemctl --user enable sunshine
+# Start:  systemctl --user start sunshine
+# -----------------------------------------------------------------------------
+
+[Unit]
+Description=Sunshine GameStream Server
+Documentation=https://docs.lizardbyte.dev/projects/sunshine/
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sunshine
+Restart=on-failure
+RestartSec=5
+
+# Environment for Wayland capture
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=WAYLAND_DISPLAY=wayland-1
+
+# Allow Sunshine to access input devices
+# (Requires user to be in 'input' group)
+
+[Install]
+WantedBy=graphical-session.target
