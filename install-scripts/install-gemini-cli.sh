@@ -71,11 +71,8 @@ install_gemini_cli() {
 # Script Entry Point
 # -----------------------------------------------------------------------------
 
-# Ensure we're on macOS
-if ! is_macos; then
-  report_failed "This script currently only supports macOS"
-  exit 1
-fi
+# Validate platform (npm works on any supported platform)
+validate_platform
 
 # Ensure Node.js is available (required for npm)
 if ! check::command_exists npm; then
