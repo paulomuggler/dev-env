@@ -30,6 +30,12 @@ set -uo pipefail
 # Get script directory
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
+# Initialize submodules BEFORE sourcing libraries (they depend on submodules)
+if [[ ! -f "${SCRIPT_DIR}/libs/bashlog/log.sh" ]]; then
+  echo "Initializing git submodules..."
+  (cd "${SCRIPT_DIR}" && git submodule update --init --recursive)
+fi
+
 # Source libraries
 source "${SCRIPT_DIR}/libs/linker.sh"
 
@@ -377,8 +383,8 @@ main() {
   # Run pre-flight checks
   preflight_checks
 
-  # Initialize git submodules
-  log info "Initializing git submodules..."
+  # Ensure all git submodules are up to date (may already be done at script start)
+  log info "Ensuring git submodules are initialized..."
   (cd "${SCRIPT_DIR}" && git submodule update --init --recursive) || true
 
   # Run setup phases
