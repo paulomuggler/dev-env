@@ -11,8 +11,8 @@
 # NOTE: This file is sourced by libs/linker.sh - DO NOT source directly
 # -----------------------------------------------------------------------------
 
-# Get script directory (for internal use)
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# Get libs directory (for internal use - avoid overwriting caller's SCRIPT_DIR)
+_LIBS_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # -----------------------------------------------------------------------------
 # State Reporting Functions (Ansible-inspired)
@@ -158,7 +158,7 @@ backup_path() {
 stow_package() {
     local package="$1"
     local dotfiles_dir
-    dotfiles_dir="$(cd "${SCRIPT_DIR}/../dotfiles" && pwd)"
+    dotfiles_dir="$(cd "${_LIBS_DIR}/../dotfiles" && pwd)"
     local package_dir="${dotfiles_dir}/${package}"
 
     if [[ ! -d "${package_dir}" ]]; then
@@ -392,7 +392,7 @@ EOF
 # Returns: 0 on success, 1 on error
 link_shell_config() {
     local tool_name="$1"
-    local dotfiles_dir="${SCRIPT_DIR}/../dotfiles"
+    local dotfiles_dir="${_LIBS_DIR}/../dotfiles"
     local source_file="${dotfiles_dir}/${tool_name}/${tool_name}.sh"
     local shelld_dir="${dotfiles_dir}/shell/dot-shell.d"
     local link_file="${shelld_dir}/${tool_name}.sh"
@@ -429,7 +429,7 @@ link_shell_config() {
 # Usage: remove_shell_config <tool_name>
 remove_shell_config() {
     local tool_name="$1"
-    local shelld_dir="${SCRIPT_DIR}/../dotfiles/shell/dot-shell.d"
+    local shelld_dir="${_LIBS_DIR}/../dotfiles/shell/dot-shell.d"
     local config_file="${shelld_dir}/${tool_name}.sh"
 
     if [[ ! -f "${config_file}" ]]; then
