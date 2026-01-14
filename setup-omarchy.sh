@@ -202,7 +202,7 @@ preflight_checks() {
   fi
 
   # Check for required tools
-  local required_tools=("git" "stow" "yay")
+  local required_tools=("git" "yay")  # stow is installed by the script
   for tool in "${required_tools[@]}"; do
     if check::command_exists "${tool}"; then
       report_ok "${tool} available"
