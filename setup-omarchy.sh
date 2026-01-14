@@ -245,6 +245,24 @@ setup_shell() {
   else
     log warn "Failed to stow Ghostty config"
   fi
+
+  # Add devenv-shell.sh sourcing to bashrc
+  local bashrc="${HOME}/.bashrc"
+  local shell_source="source ~/.config/devenv/devenv-shell.sh"
+
+  if [[ -f "${bashrc}" ]] && grep -qF "devenv-shell.sh" "${bashrc}"; then
+    report_ok "Shell integration already in .bashrc"
+  else
+    if dry_run_report "Would add devenv-shell.sh to .bashrc"; then
+      :
+    else
+      log info "Adding devenv-shell.sh to .bashrc..."
+      echo "" >> "${bashrc}"
+      echo "# dev-env shell integration" >> "${bashrc}"
+      echo "${shell_source}" >> "${bashrc}"
+      report_changed "Added shell integration to .bashrc"
+    fi
+  fi
 }
 
 setup_cli_tools() {
@@ -294,11 +312,23 @@ setup_headless() {
   run_phase "Phase 7: Headless Configuration" \
     "install-autologin.sh"
 
-  log info ""
-  log info "Headless configuration requires sourcing Hyprland config."
-  log info "Add to ~/.config/hypr/hyprland.conf:"
-  log info "  source = ~/.config/hypr/devenv-remote.conf"
-  log info ""
+  # Add Hyprland remote config sourcing
+  local hyprconf="${HOME}/.config/hypr/hyprland.conf"
+  local hypr_source="source = ~/.config/hypr/devenv-remote.conf"
+
+  if [[ -f "${hyprconf}" ]] && grep -qF "devenv-remote.conf" "${hyprconf}"; then
+    report_ok "Remote config already in hyprland.conf"
+  else
+    if dry_run_report "Would add devenv-remote.conf to hyprland.conf"; then
+      :
+    else
+      log info "Adding devenv-remote.conf to hyprland.conf..."
+      echo "" >> "${hyprconf}"
+      echo "# dev-env remote/headless configuration" >> "${hyprconf}"
+      echo "${hypr_source}" >> "${hyprconf}"
+      report_changed "Added remote config to hyprland.conf"
+    fi
+  fi
 }
 
 # =============================================================================
@@ -381,15 +411,12 @@ main() {
   log info ""
   log info "1. Restart your shell or run: source ~/.bashrc"
   log info ""
-  log info "2. Add dev-env shell integration to ~/.bashrc:"
-  log info "   echo 'source ~/.config/devenv/devenv-shell.sh' >> ~/.bashrc"
-  log info ""
-  log info "3. Start tmux and run lazy-llm:"
+  log info "2. Start tmux and run lazy-llm:"
   log info "   lazy-llm"
   log info ""
 
   if ${SETUP_REMOTE}; then
-    log info "4. Configure Sunshine (remote access):"
+    log info "3. Configure Sunshine (remote access):"
     log info "   - Start: systemctl --user start sunshine"
     log info "   - Web UI: https://localhost:47990"
     log info "   - Set credentials and pair Moonlight client"
@@ -397,10 +424,7 @@ main() {
   fi
 
   if ${SETUP_HEADLESS}; then
-    log info "5. Add Hyprland virtual output config:"
-    log info "   echo 'source = ~/.config/hypr/devenv-remote.conf' >> ~/.config/hypr/hyprland.conf"
-    log info ""
-    log info "6. Test headless setup:"
+    log info "4. Test headless setup:"
     log info "   - Reboot to verify auto-login works"
     log info "   - Connect via Moonlight or SSH"
     log info ""
