@@ -178,6 +178,62 @@ setup_ssh_recovery() {
 }
 
 # -----------------------------------------------------------------------------
+# Setup SSH Authorized Keys
+# -----------------------------------------------------------------------------
+
+setup_ssh_keys() {
+  log info "=== Setting up SSH Authorized Keys ==="
+
+  local ssh_dir="${HOME}/.ssh"
+  local auth_keys="${ssh_dir}/authorized_keys"
+
+  # Known authorized public keys for remote access
+  local -a PUBLIC_KEYS=(
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKqmsVH9n0Uw8RAhvs9LYgvXEED8jQ2EzVaOKFYX4xJ6 pmugglerm@gmail.com"
+  )
+
+  # Ensure .ssh directory exists with correct permissions
+  if [[ ! -d "${ssh_dir}" ]]; then
+    if dry_run_report "Would create ${ssh_dir} directory"; then
+      return 0
+    fi
+    mkdir -p "${ssh_dir}"
+    chmod 700 "${ssh_dir}"
+    report_changed "Created ${ssh_dir}"
+  fi
+
+  # Ensure authorized_keys exists
+  if [[ ! -f "${auth_keys}" ]]; then
+    if dry_run_report "Would create ${auth_keys}"; then
+      return 0
+    fi
+    touch "${auth_keys}"
+    chmod 600 "${auth_keys}"
+  fi
+
+  # Add each public key if not already present
+  for key in "${PUBLIC_KEYS[@]}"; do
+    local key_fingerprint
+    key_fingerprint=$(echo "${key}" | awk '{print $2}')
+
+    if grep -qF "${key_fingerprint}" "${auth_keys}" 2>/dev/null; then
+      report_ok "SSH key already authorized (${key##* })"
+    else
+      if dry_run_report "Would add SSH key: ${key##* }"; then
+        continue
+      fi
+      echo "${key}" >> "${auth_keys}"
+      report_changed "Added SSH key: ${key##* }"
+    fi
+  done
+
+  # Ensure correct permissions
+  chmod 600 "${auth_keys}"
+
+  return 0
+}
+
+# -----------------------------------------------------------------------------
 # Main Installation
 # -----------------------------------------------------------------------------
 
@@ -201,8 +257,11 @@ main() {
   # Setup Hyprland auto-start
   setup_hyprland_autostart
 
-  # Verify recovery access
+  # Setup SSH recovery access
   setup_ssh_recovery
+
+  # Setup SSH authorized keys
+  setup_ssh_keys
 
   log info ""
   log info "============================================"
