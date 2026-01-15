@@ -26,9 +26,9 @@ quick-terminal-animation-duration = 0.1
 # Full keyboard focus when opened
 quick-terminal-keyboard-interactivity = true
 
-# Global hotkey to toggle quick terminal (F12 is traditional)
-# This works even when Ghostty isn't focused
-keybind = global:f12=toggle_quick_terminal
+# Global hotkey to toggle quick terminal
+# Super+` (backtick/grave) - main dropdown terminal
+keybind = global:super+grave_accent=toggle_quick_terminal
 
 # =============================================================================
 # Window Behavior
