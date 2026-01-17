@@ -38,3 +38,15 @@ fi
 if [[ -f ~/.bashrc ]]; then
   source ~/.bashrc
 fi
+
+# dev-env: Hyprland auto-start
+# Automatically start Hyprland when logging in on TTY1
+# This enables headless remote desktop operation
+if [[ -z "${WAYLAND_DISPLAY:-}" ]] && [[ "$(tty)" == "/dev/tty1" ]]; then
+  # Use uwsm if available (Omarchy default), otherwise direct Hyprland
+  if command -v uwsm &>/dev/null; then
+    exec uwsm start hyprland-uwsm.desktop
+  else
+    exec Hyprland
+  fi
+fi

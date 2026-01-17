@@ -51,3 +51,6 @@ starship_precmd_user_func="set_win_title"
 if [[ "$(uname -s)" == "Darwin" ]] && [[ -f "${HOME}/.iterm2_shell_integration.bash" ]]; then
   source "${HOME}/.iterm2_shell_integration.bash"
 fi
+
+# dev-env shell integration
+source ~/.config/devenv/devenv-shell.sh
