@@ -24,7 +24,7 @@ quick-terminal-screen = main
 quick-terminal-animation-duration = 0.1
 
 # Full keyboard focus when opened
-quick-terminal-keyboard-interactivity = true
+quick-terminal-keyboard-interactivity = on-demand
 
 # Global hotkey to toggle quick terminal
 # Super+` (backtick/grave) - main dropdown terminal
