@@ -27,3 +27,6 @@ prompt.md
 settings.local.json
 # prompts
 test-csharp
+
+# lazy-llm runtime data
+.lazy-llm/
