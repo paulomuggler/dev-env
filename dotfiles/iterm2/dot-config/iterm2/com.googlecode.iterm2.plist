@@ -19,13 +19,13 @@ The script should do this: \(ai.prompt)</string>
 	<key>AITermAPI</key>
 	<integer>2</integer>
 	<key>AIVectorStore</key>
-	<integer>1</integer>
+	<integer>0</integer>
 	<key>AiMaxTokens</key>
-	<integer>1000000</integer>
+	<integer>400000</integer>
 	<key>AiModel</key>
-	<string>gpt-4.1</string>
+	<string>gpt-5.1</string>
 	<key>AiResponseMaxTokens</key>
-	<integer>32768</integer>
+	<integer>128000</integer>
 	<key>AitermURL</key>
 	<string>https://api.openai.com/v1/responses</string>
 	<key>AllowClipboardAccess</key>
@@ -1763,55 +1763,6 @@ The script should do this: \(ai.prompt)</string>
 			<integer>15</integer>
 			<key>Working Directory</key>
 			<string>/Users/paulomoreira</string>
-		</dict>
-		<dict>
-			<key>Command</key>
-			<string>/bin/bash --login</string>
-			<key>Custom Command</key>
-			<string>Browser</string>
-			<key>Default Bookmark</key>
-			<string>No</string>
-			<key>Guid</key>
-			<string>6ACF2878-36ED-450E-BA6F-F1FE696A6B2B</string>
-			<key>Has Hotkey</key>
-			<false/>
-			<key>HotKey Activated By Modifier</key>
-			<false/>
-			<key>HotKey Alternate Shortcuts</key>
-			<array/>
-			<key>HotKey Characters</key>
-			<string> </string>
-			<key>HotKey Characters Ignoring Modifiers</key>
-			<string> </string>
-			<key>HotKey Key Code</key>
-			<integer>49</integer>
-			<key>HotKey Modifier Activation</key>
-			<integer>0</integer>
-			<key>HotKey Modifier Flags</key>
-			<integer>786432</integer>
-			<key>HotKey Window Animates</key>
-			<true/>
-			<key>HotKey Window AutoHides</key>
-			<true/>
-			<key>HotKey Window Dock Click Action</key>
-			<integer>0</integer>
-			<key>HotKey Window Floats</key>
-			<false/>
-			<key>HotKey Window Reopens On Activation</key>
-			<false/>
-			<key>Jobs to Ignore</key>
-			<array>
-				<string>rlogin</string>
-				<string>ssh</string>
-				<string>slogin</string>
-				<string>telnet</string>
-			</array>
-			<key>Name</key>
-			<string>Web Browser</string>
-			<key>Prompt Before Closing 2</key>
-			<false/>
-			<key>Tags</key>
-			<array/>
 		</dict>
 		<dict>
 			<key>ASCII Anti Aliased</key>
@@ -3731,6 +3682,55 @@ The script should do this: \(ai.prompt)</string>
 			<key>Working Directory</key>
 			<string>/Users/paulomoreira</string>
 		</dict>
+		<dict>
+			<key>Command</key>
+			<string>/bin/bash --login</string>
+			<key>Custom Command</key>
+			<string>Browser</string>
+			<key>Default Bookmark</key>
+			<string>No</string>
+			<key>Guid</key>
+			<string>6ACF2878-36ED-450E-BA6F-F1FE696A6B2B</string>
+			<key>Has Hotkey</key>
+			<false/>
+			<key>HotKey Activated By Modifier</key>
+			<false/>
+			<key>HotKey Alternate Shortcuts</key>
+			<array/>
+			<key>HotKey Characters</key>
+			<string> </string>
+			<key>HotKey Characters Ignoring Modifiers</key>
+			<string> </string>
+			<key>HotKey Key Code</key>
+			<integer>49</integer>
+			<key>HotKey Modifier Activation</key>
+			<integer>0</integer>
+			<key>HotKey Modifier Flags</key>
+			<integer>786432</integer>
+			<key>HotKey Window Animates</key>
+			<true/>
+			<key>HotKey Window AutoHides</key>
+			<true/>
+			<key>HotKey Window Dock Click Action</key>
+			<integer>0</integer>
+			<key>HotKey Window Floats</key>
+			<false/>
+			<key>HotKey Window Reopens On Activation</key>
+			<false/>
+			<key>Jobs to Ignore</key>
+			<array>
+				<string>rlogin</string>
+				<string>ssh</string>
+				<string>slogin</string>
+				<string>telnet</string>
+			</array>
+			<key>Name</key>
+			<string>Web Browser</string>
+			<key>Prompt Before Closing 2</key>
+			<false/>
+			<key>Tags</key>
+			<array/>
+		</dict>
 	</array>
 	<key>OpenBookmark</key>
 	<false/>
@@ -3790,7 +3790,7 @@ The script should do this: \(ai.prompt)</string>
 	<key>SavePasteHistory</key>
 	<true/>
 	<key>ShowFullScreenTabBar</key>
-	<true/>
+	<false/>
 	<key>SmartPlacement</key>
 	<true/>
 	<key>SoundForEsc</key>
