@@ -46,3 +46,5 @@ if [ -f '/Users/paulomoreira/Downloads/google-cloud-sdk/path.bash.inc' ]; then .
 if [ -f '/Users/paulomoreira/Downloads/google-cloud-sdk/completion.bash.inc' ]; then . '/Users/paulomoreira/Downloads/google-cloud-sdk/completion.bash.inc'; fi
 
 alias git-push-into-cl='git push origin HEAD:refs/for/main'
+
+source /etc/bash_completion.d/hgd
