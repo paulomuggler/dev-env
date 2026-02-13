@@ -437,7 +437,7 @@ tmux_conf_uninstall_plugins_on_reload=true
 
 # Essential plugins for session management
 set -g @plugin 'tmux-plugins/tmux-resurrect'
-set -g @plugin 'tmux-plugins/tmux-continuum'
+#set -g @plugin 'tmux-plugins/tmux-continuum'
 
 # Resurrect settings
 set -g @resurrect-processes 'nvim vim ssh lazygit'
@@ -445,8 +445,8 @@ set -g @resurrect-strategy-nvim 'session'
 set -g @resurrect-capture-pane-contents 'on'
 
 # Continuum settings - auto-restore sessions
-set -g @continuum-restore 'on'
-set -g @continuum-save-interval '15'  # Save every 15 minutes
+#set -g @continuum-restore 'on'
+#set -g @continuum-save-interval '15'  # Save every 15 minutes
 
 # Utilities
 set -g @plugin 'tmux-plugins/tmux-yank'
