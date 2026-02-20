@@ -42,6 +42,25 @@ install_claude_code() {
     fi
   fi
 
+  # Stow Claude Code configuration (settings, hooks, skills)
+  log info "Configuring Claude Code settings and skills..."
+
+  # Ensure ~/.claude directory exists
+  mkdir -p "${HOME}/.claude/skills"
+
+  # Remove existing files that will be replaced by stow symlinks
+  # (stow won't overwrite regular files)
+  rm -f "${HOME}/.claude/CLAUDE.md" "${HOME}/.claude/settings.json" 2>/dev/null
+  rm -rf "${HOME}/.claude/hooks" 2>/dev/null
+  rm -rf "${HOME}/.claude/skills/todo" "${HOME}/.claude/skills/review" "${HOME}/.claude/skills/architecture-review" 2>/dev/null
+
+  # Stow claude config package
+  if ! stow_package "claude"; then
+    report_failed "Failed to stow Claude Code configuration"
+    return 1
+  fi
+  report_changed "Claude Code configuration stowed"
+
   # Display authentication info
   log info ""
   log info "Claude Code has been installed successfully!"
