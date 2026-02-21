@@ -3,7 +3,7 @@
 ## Metadata
 - **Type:** language
 - **Extensions:** .ts, .tsx, .js, .jsx, .mjs, .cjs
-- **Updated:** 2026-02-20
+- **Updated:** 2026-02-21
 
 ## Categories
 
@@ -29,17 +29,6 @@
   db.query('SELECT * FROM users WHERE id = ?', [id])
   ```
 
-- **No `innerHTML` or `dangerouslySetInnerHTML` with user data** — use textContent or sanitize first.
-  ```typescript
-  // Bad
-  element.innerHTML = userInput
-  <div dangerouslySetInnerHTML={{ __html: userData }} />
-
-  // Good
-  element.textContent = userInput
-  <div>{userData}</div>  // React auto-escapes
-  ```
-
 - **Secrets in source code** — no hardcoded API keys, tokens, passwords, connection strings. Use environment variables.
   ```typescript
   // Bad
@@ -63,20 +52,53 @@
 
 - **Prototype pollution** — don't merge arbitrary user objects into existing objects without filtering `__proto__`, `constructor`, `prototype` keys.
 
-### Correctness
-
-- **Floating-point comparison** — don't use `===` for float equality. Use epsilon comparison or integer math (cents, not dollars).
+- **Unchecked type assertions at trust boundaries** — `as T` on external data (API responses, user input, file reads) bypasses validation entirely. Use runtime validation (Zod, etc.) at system boundaries.
   ```typescript
-  // Bad
-  if (0.1 + 0.2 === 0.3) { ... }
+  // Bad — trusts the network blindly
+  const data = await res.json() as UserProfile
 
   // Good
-  if (Math.abs(a - b) < Number.EPSILON) { ... }
+  const data = UserProfileSchema.parse(await res.json())
   ```
 
-- **Array/object mutation in loops** — modifying an array while iterating over it (splice, push, shift) causes skipped or double-processed elements. Build a new array instead.
+### Correctness
 
-- **Missing `await`** — an async function call without `await` runs concurrently and its errors are silently lost. Watch for fire-and-forget patterns.
+- **Non-null assertion `!` overuse** — `value!` tells the compiler "trust me, this isn't null" but provides no runtime guarantee. Prefer narrowing, fallbacks, or explicit error handling.
+  ```typescript
+  // Bad — crashes at runtime if null
+  const name = user!.name
+  const el = document.getElementById('root')!
+
+  // Good
+  const el = document.getElementById('root')
+  if (!el) throw new Error('Missing root element')
+  ```
+
+- **Type assertions masking real mismatches** — `as T` silences the compiler but doesn't transform data. If the shapes don't actually match, you get runtime errors far from the assertion site.
+  ```typescript
+  // Bad — silences a real mismatch
+  const config = rawData as AppConfig
+
+  // Good — narrow or validate
+  function isAppConfig(x: unknown): x is AppConfig {
+    return typeof x === 'object' && x !== null && 'port' in x
+  }
+  ```
+
+- **Truthy checks that exclude valid falsy values** — `if (value)` excludes `0`, `""`, `false`, and `NaN`. When these are valid domain values, check explicitly.
+  ```typescript
+  // Bad — filters out 0 and ""
+  if (count) { process(count) }
+  if (name) { greet(name) }
+
+  // Good
+  if (count !== undefined) { process(count) }
+  if (name !== null && name !== undefined) { greet(name) }
+  ```
+
+- **Loose equality (`==`)** — type coercion causes surprises (`0 == ""`, `null == undefined`, `"" == false`). Always use `===` and `!==`.
+
+- **Missing `await`** — an async function call without `await` runs concurrently and its errors are silently lost.
   ```typescript
   // Bad — error silently lost
   saveToDatabase(data)
@@ -85,15 +107,43 @@
   await saveToDatabase(data)
   ```
 
-- **Optional chaining with side effects** — `obj?.method()` silently returns `undefined` when `obj` is null. If the call is required for correctness, don't use optional chaining — check explicitly and handle the missing case.
+- **Floating promises** — a promise created but never awaited, returned, or caught. Common in callbacks, event handlers, and `forEach`.
+  ```typescript
+  // Bad — promise floats, error lost
+  items.forEach(async item => {
+    await processItem(item)
+  })
 
-- **Non-exhaustive switch on union types** — switch over string unions or enums without a `default: never` check will silently fall through on new values.
+  // Good
+  await Promise.all(items.map(item => processItem(item)))
+  ```
+
+- **`async void` functions** — errors thrown inside `async void` can't be caught by the caller. Only use for event handlers where the framework expects `void`; otherwise always return `Promise`.
+  ```typescript
+  // Bad — uncatchable
+  const cleanup = async (): Promise<void> => { /* ... */ }
+  setTimeout(async () => { await cleanup() }, 1000) // error lost
+
+  // Good
+  setTimeout(() => { cleanup().catch(logger.error) }, 1000)
+  ```
+
+- **Sequential await where parallel is possible** — awaiting independent operations serially wastes time.
+  ```typescript
+  // Bad — sequential, ~2x slower
+  const users = await fetchUsers()
+  const posts = await fetchPosts()
+
+  // Good — parallel
+  const [users, posts] = await Promise.all([fetchUsers(), fetchPosts()])
+  ```
+
+- **Non-exhaustive switch on union types** — switch over string unions or enums without a `default: never` check silently falls through on new values.
   ```typescript
   // Bad
   switch (status) {
     case 'active': ...
     case 'inactive': ...
-    // New status values fall through silently
   }
 
   // Good
@@ -107,11 +157,17 @@
   }
   ```
 
+- **Array/object mutation in loops** — modifying an array while iterating (splice, push, shift) causes skipped or double-processed elements. Build a new array instead.
+
+- **Optional chaining with side effects** — `obj?.method()` silently returns `undefined` when `obj` is null. If the call is required for correctness, don't use optional chaining — check explicitly and handle the missing case.
+
 - **Off-by-one in slice/substring** — `slice(0, length)` is exclusive end. `substring` swaps args if start > end (surprising). Verify boundary conditions.
 
-- **`typeof null === 'object'`** — JavaScript's oldest footgun. Check for null explicitly before typeof checks.
+- **`typeof null === 'object'`** — check for null explicitly before typeof checks.
 
 - **Promise.all error handling** — one rejection rejects all. Use `Promise.allSettled` when partial results are acceptable.
+
+- **Floating-point comparison** — don't use `===` for float equality. Use epsilon comparison or integer math (cents, not dollars).
 
 ### Performance
 
@@ -124,16 +180,6 @@
 
   // Good
   const users = await db.query('SELECT * FROM users WHERE id IN (?)', [ids])
-  ```
-
-- **Unnecessary re-renders (React)** — passing new object/array/function references as props on every render. Use `useMemo`, `useCallback`, or extract constants.
-  ```typescript
-  // Bad — new object every render
-  <Component style={{ color: 'red' }} />
-
-  // Good
-  const style = useMemo(() => ({ color: 'red' }), [])
-  <Component style={style} />
   ```
 
 - **Blocking the event loop** — synchronous file I/O (`fs.readFileSync`), CPU-heavy computation, or large JSON parse on the main thread. Use async alternatives or workers.
@@ -152,6 +198,8 @@
   // or if reduce is needed:
   items.reduce((acc, item) => { acc.push(transform(item)); return acc }, [])
   ```
+
+- **Creating objects/closures in hot loops** — allocating closures, objects, or arrays inside tight loops puts GC pressure on hot paths. Hoist allocations out of the loop when the shape is static.
 
 ### Error Handling
 
@@ -192,7 +240,40 @@
   }
   ```
 
+- **Error messages without context** — `throw new Error('Failed')` tells you nothing. Include what failed and relevant identifiers.
+  ```typescript
+  // Bad
+  throw new Error('Not found')
+
+  // Good
+  throw new Error(`User ${userId} not found in project ${projectId}`)
+  ```
+
 ### Code Quality
+
+- **`as any` type assertions** — bypasses TypeScript's type system entirely. Use proper typing, generics, or type guards.
+  ```typescript
+  // Bad
+  const data = response as any
+
+  // Good
+  const data = response as ApiResponse
+  // or
+  function isApiResponse(x: unknown): x is ApiResponse { ... }
+  ```
+
+- **`@ts-ignore` / `@ts-expect-error` without justification** — suppresses compiler errors. If genuinely needed (e.g., library type bugs), add a comment explaining why and link the upstream issue.
+
+- **Overly broad types** — `Record<string, any>`, `object`, `Function`, `{}`. Use specific interfaces. `unknown` is better than `any` when the shape is genuinely unknown.
+
+- **Overusing `Partial<T>`** — makes every field optional when only some should be. Define the actual optionality.
+  ```typescript
+  // Bad — everything optional, caller can omit required fields
+  function updateUser(id: string, data: Partial<User>) { ... }
+
+  // Good — explicit about what's optional
+  type UserUpdate = Pick<User, 'name'> & Partial<Pick<User, 'email' | 'avatar'>>
+  ```
 
 - **Magic numbers and strings** — unexplained literals in logic. Extract to named constants.
   ```typescript
@@ -223,19 +304,6 @@
 
 - **Duplicated logic** — same code block appearing 3+ times. Extract to a shared function.
 
-- **`as any` type assertions** — bypasses TypeScript's type system. Use proper typing, generics, or type guards.
-  ```typescript
-  // Bad
-  const data = response as any
-
-  // Good
-  const data = response as ApiResponse
-  // or
-  function isApiResponse(x: unknown): x is ApiResponse { ... }
-  ```
-
-- **Overly broad types** — `Record<string, any>`, `object`, `Function`. Use specific interfaces.
-
 ### Style
 
 - **Inconsistent naming** — camelCase for variables/functions, PascalCase for types/classes/components, UPPER_SNAKE for constants. No mixed conventions within a file.
@@ -258,6 +326,41 @@
 
 - **Barrel file pollution** — `index.ts` re-exporting everything. Only re-export the public API. Barrel files that re-export internal implementation details hurt tree-shaking and create circular dependency risks.
 
+- **`undefined` vs `null` inconsistency** — pick one convention for "no value" within a codebase. TypeScript's optional properties use `undefined`; DOM and JSON use `null`. Don't mix arbitrarily within application code.
+
+### Resource Management
+
+- **Unclosed file handles and connections** — `fs.open`, database connections, HTTP connections must be closed in finally blocks or use disposable patterns.
+  ```typescript
+  // Bad — leaked on error
+  const conn = await pool.getConnection()
+  const result = await conn.query(sql)
+  conn.release()
+
+  // Good
+  const conn = await pool.getConnection()
+  try {
+    return await conn.query(sql)
+  } finally {
+    conn.release()
+  }
+  ```
+
+- **Event listener leaks** — adding listeners without corresponding removal. In long-lived processes, this is a memory leak.
+  ```typescript
+  // Bad — never removed
+  emitter.on('data', handler)
+
+  // Good — track and remove
+  emitter.on('data', handler)
+  // later:
+  emitter.off('data', handler)
+  ```
+
+- **Missing AbortController for cancellable operations** — long-running fetches, streams, or timers that should be cancellable but aren't.
+
+- **Timers without cleanup** — `setInterval` and `setTimeout` in contexts where the owner can be destroyed (components, connections). Always store the ID and clear on teardown.
+
 ### Comment Hygiene
 
 - **Stale comments** — comment describes behavior that no longer matches the code. Delete or update.
@@ -275,16 +378,23 @@
 | Pattern | Severity | Fix |
 |---------|----------|-----|
 | `eval()` / `new Function()` | Critical | Use structured dispatch (maps, switch) |
-| `innerHTML = userInput` | Critical | Use textContent or sanitize |
 | String-concatenated SQL | Critical | Parameterized queries |
 | Hardcoded secrets | Critical | Environment variables |
+| `as T` at trust boundaries without validation | Critical | Runtime validation (Zod, etc.) |
 | Empty catch block | Warning | Log and rethrow or handle |
 | `as any` | Warning | Proper types, generics, type guards |
+| `@ts-ignore` without justification | Warning | Fix the type error or document why |
+| Non-null assertion `!` overuse | Warning | Null checks, narrowing, fallbacks |
 | N+1 queries in loop | Warning | Batch query |
-| Missing `await` on async call | Warning | Add `await` or handle the promise |
+| Missing `await` / floating promises | Warning | Add `await`, return, or `.catch()` |
+| `async void` (outside event handlers) | Warning | Return `Promise`, add `.catch()` at call site |
 | `[...acc, item]` in reduce | Warning | `acc.push(item)` or `.map()` |
+| Truthy check on number/string | Warning | Explicit null/undefined check |
 | Magic numbers | Warning | Named constants |
 | Functions >50 lines | Warning | Extract helpers |
 | Nesting >3 levels | Warning | Guard clauses, early returns |
+| Unclosed resources in error paths | Warning | try/finally or disposable pattern |
+| Sequential await (independent ops) | Suggestion | `Promise.all` |
+| `Partial<T>` when specific optionality needed | Suggestion | `Pick` + `Partial<Pick<...>>` |
 | Dead code / commented-out code | Suggestion | Delete (git has history) |
 | Obvious comments | Nit | Remove |

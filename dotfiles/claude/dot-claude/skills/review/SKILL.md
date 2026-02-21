@@ -8,7 +8,7 @@ arguments: $ARGUMENTS
 
 # /review — Code Review Skill
 
-Single-file-scope code review: analyze files read-only (Stage 1), then refactor via `/todo work` protocol (Stage 2). Every finding must be completable within one file. Cross-file concerns are out of scope.
+Single-file-scope code review: analyze files read-only (Stage 1), then refactor via `/todo work` protocol (Stage 2). Every finding must be completable within one file. Cross-file concerns discovered during refactoring are escalated to `/architecture-review` via the Cross-File Escalation Protocol.
 
 **Integration:** Uses `.agents/TODO/` for all task tracking. Creates tasks and delegates execution to the `/todo` work protocol.
 
@@ -54,7 +54,9 @@ When flagging issues outside the listed categories, use a descriptive category n
 Before routing, check if `.agents/TODO/.review-state` exists. If it does:
 
 1. Read the file to get the current review state
-2. Inform the user: "Resuming review of {path} (stage {stage}, {mode} mode)"
+2. Inform the user:
+   - If `source: changed` → "Resuming review of changed files ({git-range}, stage {stage}, {mode} mode)"
+   - Otherwise → "Resuming review of {path} (stage {stage}, {mode} mode)"
 3. Resume based on state:
    - If `stage: 1` → count remaining `analyze-*` tasks with `status: pending`, continue Stage 1
    - If `stage: 2` → count remaining `refactor-*` tasks with `status: pending`, continue Stage 2
@@ -70,6 +72,7 @@ Parse `$ARGUMENTS` to determine the route:
 |-------------|-------|-------------|
 | `analyze` | **stage1** | Analysis only (remaining args = path/glob) |
 | `refactor` | **stage2** | Refactoring only (picks up existing refactor-* tasks) |
+| `changed` | **changed-files** | Review files changed in git history |
 | `guide` | **guide-manage** | Show, create, or list review guides |
 | `status` | **review-status** | Show review-tagged tasks from INDEX.md |
 | path or glob | **full** | Both stages sequentially |
@@ -85,13 +88,18 @@ Parse `$ARGUMENTS` to determine the route:
 Display usage summary:
 
 ```
-/review <path>                  Both stages (analyze + refactor)
-/review <path> --serial         Both stages, serial mode
-/review analyze <path>          Stage 1 only — analysis
-/review refactor                Stage 2 only — execute pending refactor tasks
-/review guide <name>            Show/create review guide (language or framework)
-/review guide list              List available guides
-/review status                  Show review-tagged tasks
+/review <path>                      Both stages (analyze + refactor)
+/review <path> --serial             Both stages, serial mode
+/review analyze <path>              Stage 1 only — analysis
+/review refactor                    Stage 2 only — execute pending refactor tasks
+/review changed                     Since last reviewed commit
+/review changed <N>                 Files changed in last N commits
+/review changed <hash>              Files changed since commit
+/review changed --since <date>      Files changed since date
+/review changed --analyze           Stage 1 only
+/review guide <name>                Show/create review guide (language or framework)
+/review guide list                  List available guides
+/review status                      Show review-tagged tasks
 ```
 
 ---
@@ -119,6 +127,74 @@ Refactor (1 pending, 1 done)
 
 ---
 
+## Route: changed-files
+
+Review files changed in git history. Resolves files from git instead of glob-expanding a path, then feeds them into the same Stage 1/Stage 2 pipeline.
+
+### Argument parsing
+
+Parse tokens after `changed`:
+
+| Pattern | Detection | Git command |
+|---------|-----------|-------------|
+| *(empty)* | No positional arg | Read `.agents/TODO/.review-last-commit` for base commit. If file doesn't exist, default to `HEAD~1` and inform user: "No previous review found, reviewing changes in last commit." |
+| Pure digits (e.g. `5`) | Regex `^\d+$` | `git diff --name-only --diff-filter=ACMR HEAD~{N}..HEAD` |
+| 7-40 hex chars (e.g. `abc123`) | Regex `^[0-9a-f]{7,40}$` | `git diff --name-only --diff-filter=ACMR {hash}..HEAD` |
+| `--since <date>` | Flag detection | `git log --since="{date}" --name-only --pretty=format: --diff-filter=ACMR \| sort -u` |
+
+**Flags:**
+- `--analyze` — Stage 1 only (skip Stage 2). Default is full both stages.
+- `--serial` — Serial mode (existing flag).
+
+### File resolution
+
+1. Run the appropriate git command to get a list of changed files
+2. If no files returned, inform user: "No changed files found in the specified range." and exit
+3. Apply the same filters as Stage 1 file resolution:
+   - Exclude non-code files, generated directories, files under 5 lines
+   - Detect languages/frameworks, load guides
+4. Deduplicate against existing `analyze-*`/`refactor-*` tasks in INDEX.md
+5. Group into batches, cap at 20 analysis tasks
+
+### Execution
+
+1. Record `HEAD` commit hash at start (before any work begins)
+2. Create `.agents/TODO/.review-state`:
+   ```yaml
+   stage: 1
+   source: changed
+   git-range: <base>..HEAD
+   path: (changed files)
+   mode: parallel  # or serial if --serial
+   started: <ISO timestamp>
+   analyze-total: 0
+   analyze-done: 0
+   refactor-total: 0
+   refactor-done: 0
+   ```
+3. Execute Stage 1 with the resolved file list (same procedure as the existing Stage 1)
+4. If `--analyze` flag: skip Stage 2, write `.review-last-commit`, delete `.review-state`, report summary
+5. Otherwise: update state to `stage: 2`, execute Stage 2, then write `.review-last-commit`, delete `.review-state`, report summary
+
+### State tracking: `.review-last-commit`
+
+Written to `.agents/TODO/.review-last-commit` when a `changed` review completes. This file is gitignored.
+
+```yaml
+commit: <full HEAD hash recorded at start of review>
+date: <ISO timestamp of completion>
+files-reviewed: <count>
+findings: <summary, e.g. "3 Critical, 7 Warning">
+```
+
+**Lifecycle:**
+- Read at start of `/review changed` (no args) to determine base commit
+- Written when the review completes (after Stage 1 if `--analyze`, after Stage 2 if full)
+- Contains HEAD at time of review **start**, not completion — so concurrent changes aren't missed
+- If file doesn't exist, `/review changed` defaults to `HEAD~1`
+
+---
+
 ## Route: full (path provided, no subcommand)
 
 Run Stage 1 then Stage 2 sequentially.
@@ -127,6 +203,7 @@ Run Stage 1 then Stage 2 sequentially.
 2. Create `.agents/TODO/.review-state`:
    ```yaml
    stage: 1
+   source: path
    path: <path>
    mode: parallel  # or serial if --serial flag
    started: <ISO timestamp>
@@ -309,7 +386,7 @@ Zero code modifications. Creates TODO tasks with findings.
    ## Acceptance Criteria
    - [ ] Fix: {Critical finding 1 short description}
    - [ ] Fix: {Warning finding 1 short description}
-   - [ ] All changes stay within {path} — no cross-file modifications
+   - [ ] All changes stay within {path} — if a fix requires cross-file changes, mark as `[E]` and follow Cross-File Escalation Protocol
    - [ ] File still compiles/passes linting after changes
    ```
 
@@ -368,23 +445,34 @@ Executes refactor tasks through the full `/todo work` protocol (plan, execute, v
 
 2. **File ownership is 1:1** — each refactor task owns exactly one target file (from its Key Files section). No two refactor tasks from the same review session touch the same file. This is the deconfliction mechanism for parallel execution.
 
-3. **Execute:**
+3. **Execute** — the execution protocol is identical for serial and parallel modes. The only difference is where it runs (main context vs subagent).
 
-   **Serial:** For each task in order, run the full 4-phase work protocol as defined by the `/todo` skill:
-   - Write `.agents/TODO/.work-state` for the task
-   - Plan: Read task, plan the refactoring approach
-   - Execute: Apply the changes, commit
-   - Verify: Run type checks, linting, tests as appropriate
-   - Complete: Write work report, mark done, lint, commit task tracking
+   **Execution protocol (per task):**
 
-   **Parallel:** Batch refactor tasks across general-purpose subagents (see Batching Strategy). Each subagent receives a batch of tasks and processes them sequentially:
-   - For each task: read the task file, plan the refactor, apply changes, verify (type check at minimum), commit atomically with a descriptive message, write a work report into the task file, mark done
-   - Subagent returns a summary of completed tasks
+   **Step 0 — before any work, read these files:**
+   - `~/.claude/skills/todo/SKILL.md` — the work protocol. Read the sections: **Sub-command: work** (4-phase procedure), **Sub-command: verify** (verify plan/report), **Work Report Section** (5-subsection format), and **Git Commit Discipline** (commit stream separation). These define how you plan, execute, verify, report, and commit.
+   - `~/.claude/skills/review/SKILL.md` — this file. Read the **Cross-File Escalation Protocol** section under Stage 2. This defines what to do if a finding turns out to require cross-file changes.
+   - The project's `CLAUDE.md` if one exists — coding conventions and verification standards.
+
+   Then follow the todo skill's 4-phase work protocol with these review-specific additions:
+
+   a. **Plan:** Read the task file. Read the target file. Plan the refactoring approach for each finding.
+
+   b. **Execute:** Apply the fixes. Commit after each logical unit of work (code-only commits, concise messages explaining *why*). If a finding requires cross-file changes, follow the Cross-File Escalation Protocol instead of making the change.
+
+   c. **Verify:** Follow the todo skill's verify procedure exactly — generate `## Verify Plan`, execute each item with file-type-specific checks (Playwright for UI, curl for API, tsc for TypeScript, etc.), append `## Verify Report` with evidence.
+
+   d. **Complete:** Follow the todo skill's complete procedure exactly — append `## Work Report` with all 5 subsections. If any findings were escalated, also include a `### Escalated` subsection (see Cross-File Escalation Protocol). Set `status: done`, run lint, task tracking commit.
+
+   **Serial mode:** Execute each task in the main context sequentially.
+
+   **Parallel mode:** Batch tasks across general-purpose subagents (see Batching Strategy). Each subagent receives a list of task file paths to process sequentially using the execution protocol above.
 
    After all subagents return, the parent agent:
-   - Reads each task file to confirm `status: done`
+   - Reads each task file to confirm `status: done` and that `## Work Report` and `## Verify Report` sections are present
+   - Collects any `archrev-refactor-*` tasks created by escalation
    - Runs `/todo lint`
-   - Deletes `.agents/TODO/.review-state`
+   - Updates `.review-state` counts
    - Reports summary
 
 4. **Complete:** Run `/todo lint`, report summary:
@@ -394,8 +482,74 @@ Executes refactor tasks through the full `/todo work` protocol (plan, execute, v
    ────────────────
    Tasks completed: 5/5
    Commits: 5
+   Escalated: 2 (→ archrev-refactor-*)
    Failures: 0
    ```
+
+### Cross-File Escalation Protocol
+
+This is a contingency protocol, not a review objective. Agents should NOT proactively look for cross-file concerns — that is `/architecture-review`'s scope. However, during refactoring an agent may discover that a finding — despite appearing single-file-scoped in analysis — actually requires changes across file boundaries to fix properly. When this happens:
+
+1. **Do not make cross-file changes.** The 1:1 file ownership guarantee must be preserved. Leave the finding unaddressed in the target file.
+
+2. **Mark the acceptance criterion as escalated** using `[E]` instead of `[x]` or `[ ]`:
+
+   ```markdown
+   - [E] Fix: dead code in parseConfig → Escalated to archrev-refactor-consolidate-config-parsers
+   ```
+
+3. **Document in the Work Report** under a `### Escalated` subsection:
+
+   ```markdown
+   ### Escalated
+   - **[Category]** L{line}: {description}
+     - Reason: {why this requires cross-file changes}
+     - Files affected: `file1.ts`, `file2.ts`, `file3.ts`
+     - Escalated to: `archrev-refactor-{slug}`
+   ```
+
+4. **Create an `archrev-refactor-*` task** compatible with the `/architecture-review` refactor stage:
+
+   ```yaml
+   ---
+   slug: archrev-refactor-{descriptive-slug}
+   title: "{Category}: {description}"
+   priority: P1  # match original finding severity; P2 for Warning
+   status: pending
+   created: YYYY-MM-DD
+   updated: YYYY-MM-DD
+   depends-on: []
+   tags: [architecture-review, refactor]
+   ---
+
+   # {title}
+
+   ## Context
+   Escalated from code review of `{original-file}`. The finding appeared single-file-scoped
+   during analysis but requires cross-file changes to fix properly.
+
+   {Why this is an issue, what needs to change across files}
+
+   ## Origin
+   - Review task: `refactor-{file-slug}`
+   - Original finding: **[{Category}]** L{line}: {description}
+
+   ## Key Files
+   - `{file1}` — {what needs to change}
+   - `{file2}` — {what needs to change}
+
+   ## Findings
+   ### {Severity}
+   1. **[{Category}]** {description}
+      - Evidence: {code snippet, import chain, etc.}
+      - Fix: {specific cross-file refactoring approach}
+
+   ## Acceptance Criteria
+   - [ ] {criterion per file/change}
+   - [ ] All files compile after changes
+   ```
+
+   The `[architecture-review, refactor]` tags ensure `/architecture-review refactor` can discover and execute these tasks. The `## Origin` section provides traceability back to the review that found the issue.
 
 ---
 
@@ -509,6 +663,8 @@ Multiple guides may be created in one session if the codebase uses multiple lang
 
 ```yaml
 stage: 1
+source: path             # "path" (default) or "changed" (git-based)
+git-range: abc123..HEAD  # only present when source: changed
 path: src/lib/
 mode: parallel
 started: 2026-02-20T14:30:00Z
@@ -521,7 +677,9 @@ refactor-done: 0
 | Field | Description |
 |-------|-------------|
 | `stage` | Current stage: `1` (analysis) or `2` (refactoring) |
-| `path` | Target path/glob being reviewed |
+| `source` | File resolution strategy: `path` (glob expansion) or `changed` (git diff) |
+| `git-range` | Git range used for file resolution (only when `source: changed`) |
+| `path` | Target path/glob being reviewed, or `(changed files)` for git-based |
 | `mode` | Execution mode: `parallel` or `serial` |
 | `started` | ISO timestamp when review began |
 | `analyze-total` | Total analysis tasks created |
@@ -529,11 +687,28 @@ refactor-done: 0
 | `refactor-total` | Total refactor tasks created |
 | `refactor-done` | Refactor tasks completed |
 
-**Lifecycle:**
+### `.agents/TODO/.review-last-commit` (gitignored)
+
+Tracks the last commit reviewed via `/review changed`. Used as the default base when running `/review changed` with no arguments.
+
+```yaml
+commit: abc123def456789...
+date: 2026-02-21T12:23:00Z
+files-reviewed: 12
+findings: 3 Critical, 7 Warning
+```
+
+**`.review-state` lifecycle:**
 - Created when `/review` starts a multi-stage flow
 - Updated as tasks complete
 - Checked at start of any `/review` invocation to resume
 - Deleted when review completes (both stages done)
+
+**`.review-last-commit` lifecycle:**
+- Read at start of `/review changed` (no args) to determine base commit
+- Written when a `changed` review completes
+- Contains HEAD at time of review **start**, not completion
+- If file doesn't exist, `/review changed` defaults to `HEAD~1`
 
 ---
 
