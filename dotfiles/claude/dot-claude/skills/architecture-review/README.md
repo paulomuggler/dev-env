@@ -1,6 +1,6 @@
 # /architecture-review — Architectural Review Skill
 
-Cross-file architectural analysis: find dead code, circular dependencies, duplication, layering violations, coupling issues, and other structural problems across the codebase. Complements `/review` which handles single-file concerns only.
+Cross-file architectural analysis: find dead code, circular dependencies, duplication, layering violations, coupling issues, and other structural problems across the codebase. Complements `/code-review` which handles single-file concerns only.
 
 ## Quick Reference
 
@@ -105,9 +105,9 @@ Progress is tracked in `.agents/TODO/.archreview-state` (gitignored). If a revie
 - Tasks are tagged `[architecture-review, analyze]` or `[architecture-review, refactor]`
 - Non-architecture-review tasks in TODO are never touched by `/architecture-review refactor`
 
-## Key Differences from /review
+## Key Differences from /code-review
 
-| Aspect | /review | /architecture-review |
+| Aspect | /code-review | /architecture-review |
 |--------|---------|---------------------|
 | Scope | Single file | Cross-file |
 | Categories | Security, correctness, style... | Dead code, circular deps, coupling... |

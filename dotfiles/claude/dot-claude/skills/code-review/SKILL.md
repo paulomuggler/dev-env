@@ -1,12 +1,12 @@
 ---
-name: review
+name: code-review
 description: Code review — analyze files for issues, create refactoring tasks, execute fixes
 user-invocable: true
 disable-model-invocation: true
 arguments: $ARGUMENTS
 ---
 
-# /review — Code Review Skill
+# /code-review — Code Review Skill
 
 Single-file-scope code review. Stage 1: read-only analysis. Stage 2: refactor via 4-phase work protocol. Cross-file concerns escalate to `/architecture-review`.
 
@@ -39,7 +39,7 @@ If `.agents/TODO/.review-state` exists: read it, inform user "Resuming review of
 | `guide` | Guide management (see below) |
 | `status` | Show review-tagged tasks from `.agents/TODO/` |
 | path/glob | Both stages sequentially |
-| *(empty)* | Usage: `/review <path>`, `/review analyze <path>`, `/review refactor`, `/review changed` |
+| *(empty)* | Usage: `/code-review <path>`, `/code-review analyze <path>`, `/code-review refactor`, `/code-review changed` |
 
 ## Route: changed-files
 
@@ -68,7 +68,7 @@ Zero code modifications. Subagents create task files and write findings.
 
 2. **Deduplicate** — glob `.agents/TODO/analyze-*.md` and `.agents/TODO/refactor-*.md` filenames. Skip files whose slug already exists. Do NOT read INDEX.md.
 
-3. **Detect guides** — check file extensions and dependency manifests. Build a list of guide paths from `~/.claude/skills/review/guides/`. If a needed guide doesn't exist, ask user to create or skip. Each batch should need at most 2-3 guides; split by language/framework if more.
+3. **Detect guides** — check file extensions and dependency manifests. Build a list of guide paths from `~/.claude/skills/code-review/guides/`. If a needed guide doesn't exist, ask user to create or skip. Each batch should need at most 2-3 guides; split by language/framework if more.
 
 4. **Batch and spawn subagents** — group files by size and guide affinity:
 
@@ -81,15 +81,15 @@ Zero code modifications. Subagents create task files and write findings.
    Each subagent `Task` call uses `subagent_type: "general-purpose"`, the `model` parameter, and this prompt:
 
    ```
-   Read `~/.claude/skills/review/analyze-agent.md` — those are your complete instructions.
+   Read `~/.claude/skills/code-review/analyze-agent.md` — those are your complete instructions.
 
    Files to analyze:
    - {path1}
    - {path2}
 
    Review guides (read before analyzing matching files):
-   - ~/.claude/skills/review/guides/{guide1}.md
-   - ~/.claude/skills/review/guides/{guide2}.md
+   - ~/.claude/skills/code-review/guides/{guide1}.md
+   - ~/.claude/skills/code-review/guides/{guide2}.md
    ```
 
    Subagents create analyze-*.md files, write findings, commit, and return one-line summaries. They do NOT create refactor tasks.
@@ -97,7 +97,7 @@ Zero code modifications. Subagents create task files and write findings.
 5. **Validate and create refactor tasks** — wait for ALL analysis subagents to complete. Spawn validation subagents (using the `model` parameter, NOT haiku):
 
    ```
-   Read `~/.claude/skills/review/validate-agent.md` — those are your complete instructions.
+   Read `~/.claude/skills/code-review/validate-agent.md` — those are your complete instructions.
 
    Analysis tasks to validate:
    - .agents/TODO/analyze-{slug1}.md
@@ -144,7 +144,7 @@ Subagents execute refactor tasks through the full 4-phase work protocol (plan �
    Each subagent `Task` call uses `subagent_type: "general-purpose"`, the `model` parameter, and this prompt:
 
    ```
-   Read `~/.claude/skills/review/refactor-agent.md` — those are your complete instructions.
+   Read `~/.claude/skills/code-review/refactor-agent.md` — those are your complete instructions.
 
    Refactor tasks to process:
    - .agents/TODO/refactor-{slug1}.md
@@ -168,7 +168,7 @@ Subagents execute refactor tasks through the full 4-phase work protocol (plan �
 
 ## Guide Management
 
-Guides live at `~/.claude/skills/review/guides/{name}.md` (language or framework). Multiple guides apply simultaneously (e.g., TypeScript + React for `.tsx`).
+Guides live at `~/.claude/skills/code-review/guides/{name}.md` (language or framework). Multiple guides apply simultaneously (e.g., TypeScript + React for `.tsx`).
 
 - `guide list` — glob guides, show metadata
 - `guide <name>` — show if exists; if missing, ask user to create (generate from agent knowledge + OWASP/linter/style guide cross-reference) or skip
@@ -190,7 +190,7 @@ refactor-total: 0
 refactor-done: 0
 ```
 
-**`.agents/TODO/.review-last-commit`** — written when `/review changed` completes:
+**`.agents/TODO/.review-last-commit`** — written when `/code-review changed` completes:
 ```yaml
 commit: abc123def456789
 date: 2026-02-21T12:23:00Z
