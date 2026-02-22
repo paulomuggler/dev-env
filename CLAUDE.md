@@ -22,6 +22,28 @@ Common mistakes to avoid:
 
 **Project root:** `/Users/paulomoreira/Projects/dev-env`
 
+### Git Operations Without Switching Branches
+**NEVER checkout a different branch when the working tree has stowed symlinks pointing into it.**
+
+Switching branches can break symlinks (e.g., Hyprland config) when files exist on one branch but not another.
+
+**Cherry-pick to another branch (using worktree):**
+```bash
+git worktree add /tmp/osx-wt osx
+cd /tmp/osx-wt && git cherry-pick <commit>
+cd ~/Projects/dev-env && git worktree remove /tmp/osx-wt
+```
+
+**Push a branch without checkout:**
+```bash
+git push origin osx
+```
+
+**Apply commits via patch (alternative):**
+```bash
+git format-patch -1 <commit> --stdout | git am --3way
+```
+
 ### Project Familiarization Protocol
 **ALWAYS familiarize yourself with project conventions before making changes.**
 
