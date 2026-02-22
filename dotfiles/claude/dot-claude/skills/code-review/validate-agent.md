@@ -105,12 +105,17 @@ Code review found {N} actionable issues in {path}. Apply all fixes below.
 
 ## Return Summary
 
-After processing all analysis tasks, return:
+After processing all analysis tasks, count every finding across the analysis tasks you validated — both before and after your adjustments. Return:
 
 ```
 Validated: {N} analysis tasks
-Findings removed: {N} fabricated, {N} false positive, {N} downgraded
-Promoted from Suggestion/Nit: {N} → Warning, {N} → Critical
+
+Pre-validation:  {N} Critical, {N} Warning, {N} Suggestion, {N} Nit ({N} total)
+Post-validation: {N} Critical, {N} Warning ({N} refactor-eligible)
+
+Adjustments: {N} fabricated removed, {N} false positive removed, {N} downgraded, {N} promoted to Warning, {N} promoted to Critical
 Refactor tasks created: {N} ({N} P1, {N} P2)
 Flagged: {any issues the parent should handle}
 ```
+
+Pre-validation counts are the findings as written by analysis subagents before any changes. Post-validation counts are the Critical + Warning findings that survived into refactor tasks. The parent aggregates these across all validation subagents to produce the final report.

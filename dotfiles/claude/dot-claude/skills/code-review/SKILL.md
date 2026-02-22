@@ -2,7 +2,7 @@
 name: code-review
 description: Code review — analyze files for issues, create refactoring tasks, execute fixes
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 arguments: $ARGUMENTS
 ---
 
@@ -106,13 +106,20 @@ Zero code modifications. Subagents create task files and write findings.
 
    Validation subagents verify findings against source code, delete fabricated findings, and create refactor tasks for validated Critical/Warning findings. Parent handles any flagged issues from the validation summary.
 
-6. **Lint and report** — spawn haiku subagent: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`. Then report:
+6. **Aggregate counts** — collect pre/post validation counts from all validation subagent return summaries. Sum across subagents for the totals.
+
+7. **Lint and report** — spawn haiku subagent: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`. Then report:
 
    ```
    Stage 1 Complete
    ────────────────
    Files analyzed: {N}
-   Validation: {N} fabricated removed, {N} false positives removed, {N} downgraded
+
+   Pre-validation:  {N} Critical, {N} Warning, {N} Suggestion, {N} Nit ({N} total)
+   Post-validation: {N} Critical, {N} Warning ({N} refactor-eligible)
+
+   Adjustments: {N} fabricated removed, {N} false positives removed, {N} downgraded,
+                {N} promoted to Warning, {N} promoted to Critical
 
    Refactor tasks ({N}):
      P1: refactor-{slug} — {title} ({N} Critical, {N} Warning)
