@@ -1,25 +1,25 @@
-# /review — Code Review Skill
+# /code-review — Code Review Skill
 
 Single-file-scope code review: analyze files for issues, then refactor through the TODO work protocol.
 
 ## Quick Reference
 
 ```
-/review <path>                      Full review (analyze + refactor)
-/review <path> --serial             Serial mode (main context, no subagents)
-/review <path> --model sonnet       Use sonnet model for subagents (default: opus)
-/review analyze <path>              Stage 1 only — analysis
-/review analyze <path> --serial     Analysis only, serial mode
-/review refactor                    Stage 2 only — execute pending refactor tasks
-/review refactor --serial           Refactors serially
-/review changed                     Since last reviewed commit
-/review changed <N>                 Last N commits
-/review changed <hash>              Since commit hash
-/review changed --since <date>      Since date
-/review changed --analyze           Stage 1 only
-/review guide <name>                Show or create a review guide
-/review guide list                  List available guides
-/review status                      Show review-tagged tasks
+/code-review <path>                      Full review (analyze + refactor)
+/code-review <path> --serial             Serial mode (main context, no subagents)
+/code-review <path> --model sonnet       Use sonnet model for subagents (default: opus)
+/code-review analyze <path>              Stage 1 only — analysis
+/code-review analyze <path> --serial     Analysis only, serial mode
+/code-review refactor                    Stage 2 only — execute pending refactor tasks
+/code-review refactor --serial           Refactors serially
+/code-review changed                     Since last reviewed commit
+/code-review changed <N>                 Last N commits
+/code-review changed <hash>              Since commit hash
+/code-review changed --since <date>      Since date
+/code-review changed --analyze           Stage 1 only
+/code-review guide <name>                Show or create a review guide
+/code-review guide list                  List available guides
+/code-review status                      Show review-tagged tasks
 ```
 
 ## Flags
@@ -81,7 +81,7 @@ The agent may also flag: auth/validation gaps, resource management issues, concu
 
 ## Review Guides
 
-Guides live in `~/.claude/skills/review/guides/{name}.md`. They provide language- and framework-specific rules, anti-patterns, and examples.
+Guides live in `~/.claude/skills/code-review/guides/{name}.md`. They provide language- and framework-specific rules, anti-patterns, and examples.
 
 ### Guide types
 
@@ -94,18 +94,18 @@ Multiple guides load simultaneously. A React + TypeScript file gets both `typesc
 
 ### Available guides
 
-Check with `/review guide list`.
+Check with `/code-review guide list`.
 
 ### Creating a guide
 
-When `/review` encounters a language or framework without a guide, it asks whether to create one. Guides are generated from the agent's knowledge of best practices, cross-referenced against well-known standards (OWASP, official style guides, ecosystem linters, framework docs).
+When `/code-review` encounters a language or framework without a guide, it asks whether to create one. Guides are generated from the agent's knowledge of best practices, cross-referenced against well-known standards (OWASP, official style guides, ecosystem linters, framework docs).
 
 You can also create or view a guide directly:
 
 ```
-/review guide typescript    # Show the TypeScript guide
-/review guide react         # Create React guide if missing
-/review guide python        # Create Python guide if missing
+/code-review guide typescript    # Show the TypeScript guide
+/code-review guide react         # Create React guide if missing
+/code-review guide python        # Create Python guide if missing
 ```
 
 ### Guide format
@@ -142,7 +142,7 @@ You can also create or view a guide directly:
 
 ## State and Resume
 
-The skill tracks progress in `.agents/TODO/.review-state` (gitignored). If a review is interrupted (context compaction, session end), running any `/review` command will detect and resume the in-progress review.
+The skill tracks progress in `.agents/TODO/.review-state` (gitignored). If a review is interrupted (context compaction, session end), running any `/code-review` command will detect and resume the in-progress review.
 
 ## Integration with /todo
 
@@ -150,31 +150,31 @@ The skill tracks progress in `.agents/TODO/.review-state` (gitignored). If a rev
 - `/todo lint` syncs the INDEX after batch operations
 - Refactoring uses the full 4-phase work protocol
 - Review tasks are tagged `[review, analyze]` or `[review, refactor]` for filtering
-- Non-review tasks in TODO are never touched by `/review refactor`
+- Non-review tasks in TODO are never touched by `/code-review refactor`
 
 ## Examples
 
 ### Review a single file
 ```
-/review src/lib/api-client.ts
+/code-review src/lib/api-client.ts
 ```
 
 ### Review a directory
 ```
-/review src/lib/
+/code-review src/lib/
 ```
 
 ### Analyze only (skip refactoring)
 ```
-/review analyze src/utils/
+/code-review analyze src/utils/
 ```
 
 ### Run pending refactors from a previous analysis
 ```
-/review refactor
+/code-review refactor
 ```
 
 ### Check review progress
 ```
-/review status
+/code-review status
 ```

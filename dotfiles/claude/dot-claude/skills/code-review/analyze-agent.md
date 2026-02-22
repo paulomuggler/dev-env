@@ -14,7 +14,7 @@ You may ONLY create or modify files under `.agents/TODO/`. Do NOT modify any pro
 
 Your prompt contains:
 - **Files to analyze** — list of source file paths
-- **Guide paths** — list of `~/.claude/skills/review/guides/{name}.md` files to read
+- **Guide paths** — list of `~/.claude/skills/code-review/guides/{name}.md` files to read
 
 ---
 

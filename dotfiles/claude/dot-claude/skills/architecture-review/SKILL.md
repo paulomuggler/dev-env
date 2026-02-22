@@ -8,7 +8,7 @@ arguments: $ARGUMENTS
 
 # /architecture-review — Architectural Review Skill
 
-Cross-file architectural analysis: build a structural model of the codebase (Stage 1), identify architectural issues, create refactoring tasks, then execute fixes via `/todo work` protocol (Stage 2). Complements `/review` which handles single-file concerns only.
+Cross-file architectural analysis: build a structural model of the codebase (Stage 1), identify architectural issues, create refactoring tasks, then execute fixes via `/todo work` protocol (Stage 2). Complements `/code-review` which handles single-file concerns only.
 
 **Integration:** Uses `.agents/TODO/` for all task tracking. Creates tasks and delegates execution to the `/todo` work protocol.
 
@@ -225,7 +225,7 @@ Each Critical or Warning finding becomes a refactor task.
 
 **Task slug:** `archrev-refactor-{descriptive-slug}` (e.g., `archrev-refactor-break-auth-session-cycle`, `archrev-refactor-extract-shared-validation`)
 
-**Key difference from `/review`:** Tasks may touch multiple files (e.g., "extract shared module X from files A, B, C"). The Key Files section lists ALL files the task will touch.
+**Key difference from `/code-review`:** Tasks may touch multiple files (e.g., "extract shared module X from files A, B, C"). The Key Files section lists ALL files the task will touch.
 
 **Deconfliction rule:** Tasks with overlapping Key Files must execute serially. During Stage 2, check for file overlaps and ensure conflicting tasks don't run in parallel.
 
