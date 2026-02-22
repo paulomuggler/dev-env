@@ -169,9 +169,25 @@ Update `.archreview-state`: `scan-done: true`
 
 Apply the analysis categories against the structural model and codebase. Load all applicable guides (see Guide Layering).
 
-You have autonomy in how to investigate each category. Some categories can be answered purely from the structural model (dead exports, circular deps, god files). Others require reading file content to compare patterns or detect duplication. Decide when to spawn subagents, when to read files directly, and how deep to go based on what you find.
+You have autonomy in how to investigate each category. Some categories can be answered purely from the structural model (dead exports, circular deps, god files). Others require reading file content to compare patterns or detect duplication. Decide when to work in the main context, when to spawn subagents, and how deep to go based on what you find.
 
 **Guides are supplementary, not primary.** Rely first on your own knowledge and judgment about architecture, language idioms, and best practices. Guides add ecosystem-specific context — they don't define the boundaries of analysis.
+
+#### Subagent Strategy
+
+When spawning subagents for analysis, use **general-purpose subagents** (`subagent_type: "general-purpose"`). These can read source files, analyze, and write findings directly into `.agents/TODO/` task files — eliminating the parent as a bottleneck and preventing data loss if the parent context compacts.
+
+General-purpose subagents inherit the parent model. No model override is needed.
+
+**WRITE RESTRICTION:** Every analysis subagent prompt must begin with:
+> **WRITE RESTRICTION:** You may ONLY create or modify files under `.agents/TODO/`. Do NOT modify any project source files. This is a read-only analysis.
+
+**Delegation patterns:**
+- **By category:** Assign one subagent per analysis category (dead code, circular deps, duplication, etc.). Each reads the structural model + relevant files, writes findings and creates refactor tasks for its category.
+- **By subtree:** For large codebases, assign subagents to directory subtrees. Each analyzes all categories within its subtree.
+- **Hybrid:** Use the structural model to identify clusters of concern, then spawn targeted subagents for each cluster.
+
+Each subagent should write its findings into the analysis summary task file (or a dedicated section) and create `archrev-refactor-*` task files for Critical/Warning findings. The parent validates results after subagents return — checking that task files are properly formatted, findings have evidence, and no project files were modified.
 
 #### Guide Layering
 

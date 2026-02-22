@@ -5,16 +5,29 @@ Single-file-scope code review: analyze files for issues, then refactor through t
 ## Quick Reference
 
 ```
-/review <path>                  Full review (analyze + refactor)
-/review <path> --serial         Full review, serial mode
-/review analyze <path>          Analysis only — creates findings + refactor tasks
-/review analyze <path> --serial Analysis only, serial mode
-/review refactor                Execute pending refactor tasks
-/review refactor --serial       Execute refactors serially
-/review guide <name>            Show or create a review guide (language or framework)
-/review guide list              List available guides
-/review status                  Show all review-tagged tasks
+/review <path>                      Full review (analyze + refactor)
+/review <path> --serial             Serial mode (main context, no subagents)
+/review <path> --model sonnet       Use sonnet model for subagents (default: opus)
+/review analyze <path>              Stage 1 only — analysis
+/review analyze <path> --serial     Analysis only, serial mode
+/review refactor                    Stage 2 only — execute pending refactor tasks
+/review refactor --serial           Refactors serially
+/review changed                     Since last reviewed commit
+/review changed <N>                 Last N commits
+/review changed <hash>              Since commit hash
+/review changed --since <date>      Since date
+/review changed --analyze           Stage 1 only
+/review guide <name>                Show or create a review guide
+/review guide list                  List available guides
+/review status                      Show review-tagged tasks
 ```
+
+## Flags
+
+| Flag | Values | Default | Effect |
+|------|--------|---------|--------|
+| `--serial` | *(boolean)* | off | Process in main context instead of spawning subagents |
+| `--model` | `haiku`, `sonnet`, `opus` | `opus` | Model used for subagent Task tool invocations |
 
 ## How It Works
 
