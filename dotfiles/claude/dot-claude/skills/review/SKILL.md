@@ -194,23 +194,38 @@ Zero code modifications. Creates TODO tasks with findings.
    - [ ] Only flag issues completable within this single file
    ```
 
-   Run `/todo lint` after creating all tasks.
+   Run lint after creating all tasks — spawn a `general-purpose` subagent with `model: "haiku"`:
+   `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`
 
-5. **Spawn subagents** (parallel mode) or process inline (serial mode):
+5. **Spawn subagents** — batch analysis tasks using the Batching Strategy:
 
-   **Parallel:** batch analysis tasks using the Batching Strategy. For each batch, spawn a `general-purpose` subagent with the `model` parameter from `--model` flag and the prompt below.
+   **Parallel (default):** spawn one `general-purpose` subagent per batch, all in parallel.
 
-   **Serial:** process each task in main context using the same procedure as the subagent prompt.
+   **Serial (`--serial`):** spawn one `general-purpose` subagent per task, sequentially (one at a time). Still uses subagents — serial means sequential execution, not main-context execution. This protects parent context from growing with each analysis.
 
-6. **Validate subagent output:**
-   a. Read each analysis task file. Confirm `status: done` and `## Findings` section has actual content.
-   b. Confirm all acceptance criteria are `[x]`.
-   c. **Cross-check refactor tasks against analysis**: for each refactor task, verify its findings appear verbatim in the corresponding analysis task. If a refactor task contains findings not present in the analysis, delete the refactor task and recreate it from the actual analysis findings (or delete it entirely if the analysis has no Critical/Warning findings for that file).
-   d. **Spot-check evidence**: for 1-2 files per batch, re-read the source file and verify a Critical/Warning finding's `Evidence:` snippet matches. Flag fabricated evidence.
-   e. Handle any incomplete tasks in parent context.
-   f. Count total findings and refactor tasks.
+   All subagent `Task` calls MUST use the `model` parameter from `--model` flag and the prompt template below.
 
-7. **Complete:** Run `/todo lint`. Update `.review-state` counts. Report:
+6. **Validate subagent output** — spawn a validation subagent (model: `haiku` is sufficient) for each batch:
+
+   Validation subagent prompt:
+   ```
+   You are validating Stage 1 code review output. For each analysis task below:
+   1. Read the analysis task file. Confirm `status: done` and `## Findings` section exists with content.
+   2. Confirm all acceptance criteria are `[x]`.
+   3. For each refactor task that was created, verify its `## Findings to Address` entries
+      appear verbatim in the corresponding analysis task's `## Findings` section.
+      If a refactor task has findings NOT in the analysis, report it as INVALID.
+   4. For EVERY Critical and Warning finding: re-read the source file at the claimed line number.
+      Verify the `Evidence:` snippet matches the actual code. Report mismatches as FABRICATED.
+   5. Report a summary: tasks validated, findings verified, any issues found.
+
+   Analysis tasks: {list}
+   Refactor tasks: {list}
+   ```
+
+   After validation subagents return, the parent handles any flagged issues (delete invalid refactor tasks, re-analyze incomplete tasks). Count total findings and refactor tasks.
+
+7. **Complete:** Spawn a lint subagent (`model: "haiku"`, prompt: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`). Update `.review-state` counts. Report:
 
    ```
    Stage 1 Complete
@@ -220,93 +235,27 @@ Zero code modifications. Creates TODO tasks with findings.
    Refactor tasks created: 5 (2 P1, 3 P2)
    ```
 
-### Subagent Prompt Template (Stage 1)
+### Subagent Prompt (Stage 1)
 
-This is the full prompt passed to each Stage 1 subagent:
+Each subagent receives a short prompt — the full instructions live in `analyze-agent.md`:
 
-> **WRITE RESTRICTION:** You may ONLY create or modify files under `.agents/TODO/`. Do NOT modify any project source files. This is read-only analysis.
->
-> You are performing Stage 1 code review analysis. For each analysis task assigned to you:
->
-> 1. **Read** the analysis task file to get target files from `## Key Files`
-> 2. **Read** each target file completely
-> 3. **Analyze** using the review guide (below) and your own knowledge
-> 4. **Write findings** into the analysis task file — replace `## Findings` placeholder using the format below
-> 5. **Check off all acceptance criteria** (`- [ ]` → `- [x]`)
-> 6. **Create refactor tasks** — ONLY for files that have Critical or Warning findings **in the ## Findings section you wrote in step 4**. One refactor task per file. Files with only Suggestions/Nits get NO refactor task.
->    - The refactor task's `## Findings to Address` section MUST be a verbatim copy of the Critical and Warning entries you wrote in step 4 for that file. Do NOT re-analyze, do NOT generate new findings, do NOT read archived tasks. This is a mechanical copy operation.
->    - If a file has no Critical or Warning findings in your step 4 output, do NOT create a refactor task for it.
-> 7. **Mark done** — set frontmatter `status: done` and `updated: {today}`
->
-> **Severity levels:**
-> - **Critical** — Security vulnerabilities, data loss, correctness bugs → P1 refactor task
-> - **Warning** — Performance, error handling, code quality → P2 refactor task
-> - **Suggestion** — Worth noting, documented only
-> - **Nit** — Trivial, documented only
->
-> **Categories:** Security, Correctness, Performance, Error Handling, Code Quality, Style, Single-File Design, Comment Hygiene. Not exhaustive — flag anything within single-file scope.
->
-> **Guides are supplementary.** Use them for ecosystem-specific precision. Rely first on your own judgment.
->
-> **Evidence must be verbatim.** Every `Evidence:` snippet MUST be copied exactly from the file as returned by the Read tool. Re-read the line range if unsure.
->
-> **Do NOT read `.agents/TODO/archive/`** or any previously-created task files. Your findings must come exclusively from reading the current source files. Prior review rounds are irrelevant.
->
-> **Findings format** (written into the analysis task file):
-> ```markdown
-> ## Findings
->
-> ### {file-path}
->
-> #### Critical
-> 1. **[Category]** L{line}: Description
->    - Evidence: `code snippet`
->    - Fix: Description of fix
->
-> #### Warning
-> 1. **[Category]** L{line}: Description
->    - Evidence: `code snippet`
->    - Fix: Description of fix
->
-> #### Suggestion
-> 1. **[Category]** L{line}: Description
->    - Fix: Description of fix
-> ```
-> Omit empty severity sections. If a file has no findings: `### {path}` with "No findings."
->
-> **Refactor task template** — create `.agents/TODO/refactor-{file-slug}.md`:
-> ```yaml
-> ---
-> slug: refactor-{file-slug}
-> title: "Refactor {path} — {N} findings"
-> priority: P1  # P1 if any Critical; P2 if only Warnings
-> status: pending
-> created: {today}
-> updated: {today}
-> depends-on: []
-> tags: [review, refactor]
-> ---
->
-> # Refactor {path} — {N} findings
->
-> ## Context
-> Code review found {N} actionable issues in {path}. Apply all fixes below.
->
-> ## Key Files
-> - `{path}` — Target file to refactor
->
-> ## Findings to Address
-> {VERBATIM COPY of Critical and Warning findings for this file from the ## Findings section of the analysis task. No additions, no rewording, no new findings.}
->
-> ## Acceptance Criteria
-> - [ ] Fix: {finding 1 short description}
-> - [ ] Fix: {finding 2 short description}
-> - [ ] All changes stay within {path} — if cross-file changes needed, mark `[E]` and follow Cross-File Escalation Protocol
-> - [ ] File still compiles/passes linting after changes
-> ```
->
-> Analysis tasks to process: {list of .agents/TODO/analyze-*.md file paths}
-> Review guide: {guide content}
+```
+Read `~/.claude/skills/review/analyze-agent.md` — those are your complete instructions.
+
+Analysis tasks to process:
+- .agents/TODO/analyze-{slug1}.md
+- .agents/TODO/analyze-{slug2}.md
+
+Review guides (read each before analyzing files that match its extensions/framework):
+- ~/.claude/skills/review/guides/typescript.md (for .ts/.tsx files)
+- ~/.claude/skills/review/guides/react.md (for .tsx files using React)
+```
+
+**Guide delivery:** pass guide *paths*, not content. The subagent reads guides on-demand as it encounters relevant files, rather than loading everything upfront. This keeps the prompt small and lets guides compete less with the instruction file for context attention.
+
+**Guide count in batching:** each batch should require at most 2-3 guides. If a batch would need more (e.g., files spanning 4+ frameworks), split the batch by language/framework instead. This is more important than file count — a batch of 5 small files needing 1 guide is better than 2 files needing 5 guides.
+
+The subagent reads its own instructions, reads the source files, writes findings into the analysis task files, creates refactor tasks, and commits — all autonomously. The parent does NOT rewrite or relay findings.
 
 ---
 
@@ -332,7 +281,7 @@ Executes refactor tasks through the **full `/todo work` protocol**. Every task M
    - Work report has all 5 subsections
    - If ANY section is missing or incomplete: **re-read the task, identify gaps, fix in parent context**
    - Collect any `archrev-refactor-*` tasks from escalation
-   - Run `/todo lint`
+   - Spawn a lint subagent (`model: "haiku"`, prompt: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`)
 
 4. **Report:**
 
@@ -345,59 +294,19 @@ Executes refactor tasks through the **full `/todo work` protocol**. Every task M
    Failures: 0
    ```
 
-### Subagent Prompt Template (Stage 2)
+### Subagent Prompt (Stage 2)
 
-> You are performing Stage 2 code review refactoring. **You MUST follow the `/todo work` 4-phase protocol for every task.** No phase may be skipped.
->
-> **Before starting, read these files:**
-> - `~/.claude/skills/todo/SKILL.md` — read the full **Sub-command: work** section (the 4-phase procedure), **Sub-command: verify** (verify plan and report format), **Work Report Section** (the 5 required subsections), and **Git Commit Discipline** (commit stream separation)
-> - `~/.claude/skills/review/SKILL.md` — read the **Appendix: Cross-File Escalation** section
-> - The project's `CLAUDE.md` if it exists — coding conventions and verification standards
->
-> **The 4 phases — ALL are mandatory, in order:**
->
-> ### Phase 1: Plan
-> - Read the task file completely (frontmatter, context, key files, findings, acceptance criteria)
-> - Read the target source file completely
-> - Plan the refactoring approach for each finding
-> - Understand what verification will be needed (plan this now, execute in phase 3)
->
-> ### Phase 2: Execute
-> - Apply the fixes described in `## Findings to Address`
-> - **Check off each acceptance criterion** as you complete it: `- [ ]` → `- [x]`
-> - If a finding requires cross-file changes: mark `[E]` and follow Cross-File Escalation Protocol instead
-> - Commit after each logical unit of work — code-only commits, concise messages explaining *why*
-> - Every criterion must end as `[x]` or `[E]`, never left as `[ ]`
->
-> ### Phase 3: Verify (DO NOT SKIP)
-> - Append `## Verify Plan` to the task file with checkbox items for each verification step
-> - At minimum, EVERY refactor task MUST include: `- [ ] tsc --noEmit passes` (for TypeScript) or equivalent compile check
-> - For UI changes: Playwright navigation + snapshot + screenshot
-> - For API changes: curl the endpoint
-> - Execute each verification step. Check off items as they pass: `- [ ]` → `- [x]`
-> - Append `## Verify Report` summarizing results with concrete evidence (command output, screenshot paths, etc.)
->
-> ### Phase 4: Complete (DO NOT SKIP)
-> - Append `## Work Report` with ALL 5 subsections:
->   1. **What was done** — summary of changes
->   2. **How** — approach taken
->   3. **Decisions** — choices made and why
->   4. **Files changed** — list of modified files
->   5. **Follow-up** — anything remaining (or "None")
-> - If any findings were escalated, also include a `### Escalated` subsection
-> - Set frontmatter `status: done` and `updated: {today}`
-> - Make a task tracking commit: stage only `.agents/TODO/` files, prefix message with `[todo]`
-> - Do NOT move task files to `done/` or run `/todo lint` — the parent handles that
->
-> **Completed task file MUST contain all of these sections:**
-> - `## Acceptance Criteria` — every item `[x]` or `[E]`
-> - `## Verify Plan` — every item `[x]`
-> - `## Verify Report` — with evidence
-> - `## Work Report` — with all 5 subsections
->
-> **Git discipline:** Two separate commit streams. Code commits = source files only, concise *why* messages. Task tracking commits = `.agents/TODO/` files only, `[todo]` prefix. Never mix code and task tracking in one commit.
->
-> Tasks to process: {list of .agents/TODO/refactor-*.md file paths}
+Each subagent receives a short prompt — the full instructions live in `refactor-agent.md`:
+
+```
+Read `~/.claude/skills/review/refactor-agent.md` — those are your complete instructions.
+
+Refactor tasks to process:
+- .agents/TODO/refactor-{slug1}.md
+- .agents/TODO/refactor-{slug2}.md
+```
+
+The subagent reads its own instructions (including the 4-phase work protocol, verification standards, cross-file escalation, and git discipline), then executes all assigned tasks autonomously.
 
 ---
 
@@ -500,61 +409,6 @@ If this file doesn't exist, `/review changed` defaults to `HEAD~1`.
 
 ---
 
-## Appendix: Cross-File Escalation Protocol
+## Appendix: Cross-File Escalation
 
-This is a contingency for Stage 2 only. Agents should NOT proactively look for cross-file concerns (that's `/architecture-review`'s scope). Use when a finding that appeared single-file-scoped actually requires cross-file changes.
-
-1. **Do not make cross-file changes.** Leave the finding unaddressed.
-
-2. **Mark the criterion as escalated** — `[E]` instead of `[x]`:
-   ```markdown
-   - [E] Fix: dead code in parseConfig → Escalated to archrev-refactor-consolidate-config-parsers
-   ```
-
-3. **Document in Work Report** under `### Escalated`:
-   ```markdown
-   ### Escalated
-   - **[Category]** L{line}: {description}
-     - Reason: {why cross-file changes needed}
-     - Files affected: `file1.ts`, `file2.ts`
-     - Escalated to: `archrev-refactor-{slug}`
-   ```
-
-4. **Create an `archrev-refactor-*` task:**
-   ```yaml
-   ---
-   slug: archrev-refactor-{descriptive-slug}
-   title: "{Category}: {description}"
-   priority: P1  # match original finding severity
-   status: pending
-   created: YYYY-MM-DD
-   updated: YYYY-MM-DD
-   depends-on: []
-   tags: [architecture-review, refactor]
-   ---
-
-   # {title}
-
-   ## Context
-   Escalated from code review of `{original-file}`. Requires cross-file changes.
-
-   ## Origin
-   - Review task: `refactor-{file-slug}`
-   - Original finding: **[{Category}]** L{line}: {description}
-
-   ## Key Files
-   - `{file1}` — {what needs to change}
-   - `{file2}` — {what needs to change}
-
-   ## Findings
-   ### {Severity}
-   1. **[{Category}]** {description}
-      - Evidence: {code snippet}
-      - Fix: {cross-file refactoring approach}
-
-   ## Acceptance Criteria
-   - [ ] {criterion per file/change}
-   - [ ] All files compile after changes
-   ```
-
-   The `[architecture-review, refactor]` tags let `/architecture-review refactor` discover these tasks.
+Stage 2 subagents have the full escalation protocol in `refactor-agent.md`. For the parent's validation purposes: escalated findings are marked `[E]` in acceptance criteria and generate `archrev-refactor-*` tasks tagged `[architecture-review, refactor]`. Collect these during Stage 2 validation.
