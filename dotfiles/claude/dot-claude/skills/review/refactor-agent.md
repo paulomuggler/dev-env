@@ -30,7 +30,7 @@ Read the project's `CLAUDE.md` if it exists — it contains coding conventions, 
 ### Phase 3: Verify (DO NOT SKIP)
 
 - Append `## Verify Plan` to the task file with checkbox items for each verification step
-- At minimum, EVERY refactor task MUST include: `- [ ] tsc --noEmit passes` (for TypeScript) or equivalent compile check
+- At minimum, EVERY refactor task MUST include: `- [ ] pnpm lint passes` and `- [ ] tsc --noEmit passes` (for TypeScript) or equivalent compile check
 - For UI changes: Playwright navigation + snapshot + screenshot (see Verification Standards below)
 - For API changes: curl the endpoint
 - Execute each verification step. Check off items as they pass: `- [ ]` to `- [x]`
@@ -66,7 +66,7 @@ If ANY section is missing or incomplete, the task is NOT done.
 
 ## Verification Standards
 
-**TypeScript/JavaScript:** `tsc --noEmit` must pass. This is the minimum. Also check for linting if the project uses it.
+**TypeScript/JavaScript:** Both `pnpm lint` (Biome) and `tsc --noEmit` must pass. Run both — Biome catches lint/format issues, tsc catches type errors.
 
 **UI changes:** Navigate to the affected page via Playwright (`browser_navigate`), take a `browser_snapshot`, verify expected elements, interact with the feature, take a `browser_take_screenshot` for visual evidence. Check `browser_console_messages` and `browser_network_requests` for errors.
 

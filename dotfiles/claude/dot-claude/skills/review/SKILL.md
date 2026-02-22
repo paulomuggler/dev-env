@@ -8,369 +8,181 @@ arguments: $ARGUMENTS
 
 # /review — Code Review Skill
 
-Single-file-scope code review: analyze files read-only (Stage 1), then refactor via `/todo work` protocol (Stage 2). Every finding must be completable within one file. Cross-file concerns are escalated to `/architecture-review` (see Appendix).
+Single-file-scope code review. Stage 1: read-only analysis. Stage 2: refactor via 4-phase work protocol. Cross-file concerns escalate to `/architecture-review`.
 
----
+## Execution Rules
 
-## Execution Rules (READ FIRST)
-
-These rules are non-negotiable. Violating any of them breaks the review.
-
-1. **Never use worktree isolation** — NEVER pass `isolation: "worktree"` to the Task tool. All subagents work in the main repo directly. Each task targets a unique file, so there are no conflicts. Worktrees cause merge hell for zero benefit.
-2. **Subagent type: `"general-purpose"`** — NEVER use `"Explore"` or any other type. Every `Task` tool call MUST use `subagent_type: "general-purpose"`.
-3. **Pass the `model` parameter** — every `Task` tool call MUST include `model: "{model}"` where `{model}` comes from the `--model` flag (default: `opus`).
-4. **Subagents write task files** — the parent agent does NOT write findings or analysis content. Subagents read source files, analyze, write findings into task files, create refactor tasks, and mark tasks done.
-5. **Parent validates, never redoes** — after subagents return, the parent spot-checks output and fixes gaps. It does NOT re-analyze files or rewrite findings from scratch.
-
----
+1. **Never use worktree isolation** — NEVER pass `isolation: "worktree"` to the Task tool. All subagents work in the main repo. Each task targets a unique file — no conflicts.
+2. **Subagent type: `"general-purpose"`** — NEVER use `"Explore"` or other types.
+3. **Pass the `model` parameter** — every `Task` call MUST include `model: "{model}"` from `--model` flag (default: `sonnet`).
+4. **Subagents are autonomous** — analysis subagents create analyze tasks and write findings. Validation subagents verify findings and create refactor tasks. Parent only orchestrates.
+5. **Parent validates, never redoes** — spot-check output after subagents return. Never re-analyze files.
 
 ## Flags
 
-Parsed from anywhere in `$ARGUMENTS`:
-
-| Flag | Values | Default | Effect |
-|------|--------|---------|--------|
-| `--serial` | *(boolean)* | off | Process tasks in main context instead of via subagents |
-| `--model` | `haiku`, `sonnet`, `opus` | `opus` | Model used for all subagent `Task` tool invocations |
-
----
+| Flag | Default | Effect |
+|------|---------|--------|
+| `--serial` | off | Sequential subagent execution instead of parallel |
+| `--model` | `sonnet` | Model for subagent `Task` calls (`haiku`, `sonnet`, `opus`) |
 
 ## Resume Check
 
-Before routing, check if `.agents/TODO/.review-state` exists. If it does:
-
-1. Read the file to get current state
-2. Inform user: "Resuming review of {path} (stage {stage}, {mode} mode)"
-3. Resume: if `stage: 1` → continue Stage 1; if `stage: 2` → continue Stage 2
-4. Do NOT start fresh
-
----
+If `.agents/TODO/.review-state` exists: read it, inform user "Resuming review of {path} (stage {stage})", resume from saved stage. Do NOT start fresh.
 
 ## Routing
 
-Parse `$ARGUMENTS` (after extracting flags):
-
-| First token | Route | Description |
-|-------------|-------|-------------|
-| `analyze` | **stage1** | Analysis only (remaining args = path/glob) |
-| `refactor` | **stage2** | Refactoring only (picks up existing refactor-* tasks) |
-| `changed` | **changed-files** | Review files changed in git history |
-| `guide` | **guide-manage** | Show, create, or list review guides |
-| `status` | **review-status** | Show review-tagged tasks |
-| path or glob | **full** | Both stages sequentially |
-| *(empty)* | **help** | Usage summary |
-
----
-
-## Route: help
-
-```
-/review <path>                      Full review (analyze + refactor)
-/review <path> --serial             Serial mode
-/review <path> --model sonnet       Use sonnet for subagents
-/review analyze <path>              Stage 1 only
-/review refactor                    Stage 2 only
-/review changed                     Since last reviewed commit
-/review changed <N>                 Last N commits
-/review changed <hash>              Since commit hash
-/review changed --since <date>      Since date
-/review changed --analyze           Stage 1 only
-/review guide <name>                Show/create review guide
-/review guide list                  List available guides
-/review status                      Show review-tagged tasks
-```
-
----
-
-## Route: review-status
-
-1. Glob `.agents/TODO/analyze-*.md` and `.agents/TODO/refactor-*.md`
-2. Parse frontmatter, display grouped by type and status:
-
-```
-Review Tasks
-────────────
-Analyze (3 pending, 2 done)
-  [ ] analyze-src-lib-api-client — Analyze src/lib/api-client.ts
-  [x] analyze-src-lib-db         — Analyze src/lib/db.ts
-
-Refactor (1 pending, 1 done)
-  [ ] refactor-src-lib-api-client — Refactor src/lib/api-client.ts (P1)
-  [x] refactor-src-lib-db         — Refactor src/lib/db.ts (P2)
-```
-
----
+| First token | Route |
+|-------------|-------|
+| `analyze` | Stage 1 only (remaining args = path/glob) |
+| `refactor` | Stage 2 only (picks up pending refactor-* tasks) |
+| `changed` | Review files changed in git history |
+| `guide` | Guide management (see below) |
+| `status` | Show review-tagged tasks from `.agents/TODO/` |
+| path/glob | Both stages sequentially |
+| *(empty)* | Usage: `/review <path>`, `/review analyze <path>`, `/review refactor`, `/review changed` |
 
 ## Route: changed-files
 
-Review files changed in git history.
-
-### Argument parsing
-
 | Pattern | Git command |
 |---------|-------------|
-| *(empty)* | Base from `.agents/TODO/.review-last-commit`. If missing, default to `HEAD~1` |
-| Pure digits (`5`) | `git diff --name-only --diff-filter=ACMR HEAD~{N}..HEAD` |
-| Hex hash (`abc123`) | `git diff --name-only --diff-filter=ACMR {hash}..HEAD` |
+| *(empty)* | Base from `.agents/TODO/.review-last-commit`, default `HEAD~1` |
+| Digits (`5`) | `git diff --name-only --diff-filter=ACMR HEAD~{N}..HEAD` |
+| Hex hash | `git diff --name-only --diff-filter=ACMR {hash}..HEAD` |
 | `--since <date>` | `git log --since="{date}" --name-only --pretty=format: --diff-filter=ACMR \| sort -u` |
 
-Extra flags: `--analyze` (Stage 1 only).
-
-### Execution
-
-1. Record `HEAD` commit hash at start
-2. Create `.review-state` with `source: changed`, `git-range: <base>..HEAD`
-3. Run resolved files through Stage 1 (same procedure)
-4. If `--analyze`: skip Stage 2, write `.review-last-commit`, delete `.review-state`, report
-5. Otherwise: update state to `stage: 2`, execute Stage 2, write `.review-last-commit`, delete `.review-state`, report
-
----
+Record HEAD at start. Run resolved files through Stage 1 (+ Stage 2 unless `--analyze`). Write `.review-last-commit`, delete `.review-state`, report.
 
 ## Route: full
 
-Run Stage 1 then Stage 2 sequentially.
-
-1. Parse path/glob and flags from `$ARGUMENTS`
-2. Create `.review-state` (see State Files section)
-3. Execute Stage 1
-4. Update state: `stage: 2`
-5. Execute Stage 2
-6. Delete `.review-state`, report summary
-
----
-
-## Route: guide-manage
-
-See Guide Management section.
+1. Create `.review-state` → 2. Stage 1 → 3. Update state to `stage: 2` → 4. Stage 2 → 5. Delete state, report.
 
 ---
 
 ## Stage 1: Analysis (Read-Only)
 
-Zero code modifications. Creates TODO tasks with findings.
+Zero code modifications. Subagents create task files and write findings.
 
 ### Parent Procedure
 
-1. **Resolve files** — expand path/glob. Filter out:
-   - Non-code files (images, lockfiles, binaries)
-   - Generated directories (`node_modules/`, `dist/`, `.git/`, `build/`, `coverage/`)
-   - Files under 5 lines
+1. **Resolve files** — expand path/glob. Filter out non-code files, generated dirs (`node_modules/`, `dist/`, `.git/`), files under 5 lines. Cap at 20 analysis tasks total; warn if exceeded.
 
-   Group small related files into batches of up to 5 per analysis task. Cap at 20 analysis tasks; warn user if exceeded.
+2. **Deduplicate** — glob `.agents/TODO/analyze-*.md` and `.agents/TODO/refactor-*.md` filenames. Skip files whose slug already exists. Do NOT read INDEX.md.
 
-2. **Detect guides** — detect languages/frameworks from file extensions and dependency manifests. For each batch, determine which guides apply (e.g., a `.tsx` file gets both `typescript.md` and `react.md`). If a needed guide doesn't exist, trigger the guide creation flow (see Guide Management).
+3. **Detect guides** — check file extensions and dependency manifests. Build a list of guide paths from `~/.claude/skills/review/guides/`. If a needed guide doesn't exist, ask user to create or skip. Each batch should need at most 2-3 guides; split by language/framework if more.
 
-3. **Deduplicate** — read `.agents/TODO/INDEX.md`. Skip files that already have `analyze-*` or `refactor-*` tasks.
+4. **Batch and spawn subagents** — group files by size and guide affinity:
 
-4. **Create analysis task files** — for each file/batch, write `.agents/TODO/analyze-{file-slug}.md`:
+   | File size | Files per subagent |
+   |-----------|-------------------|
+   | <200 lines | 3-5 |
+   | 200-500 lines | 2-3 |
+   | 500+ lines | 1 |
 
-   ```yaml
-   ---
-   slug: analyze-{file-slug}
-   title: "Analyze {path} for code quality issues"
-   priority: P2
-   status: pending
-   created: YYYY-MM-DD
-   updated: YYYY-MM-DD
-   depends-on: []
-   tags: [review, analyze]
-   ---
+   Each subagent `Task` call uses `subagent_type: "general-purpose"`, the `model` parameter, and this prompt:
 
-   # Analyze {path} for code quality issues
+   ```
+   Read `~/.claude/skills/review/analyze-agent.md` — those are your complete instructions.
 
-   ## Context
-   Code review analysis of {path}. Read the file, apply all applicable review guides,
-   and document findings by severity.
+   Files to analyze:
+   - {path1}
+   - {path2}
 
-   ## Key Files
-   - `{path}` — Target file
-   - `~/.claude/skills/review/guides/{language}.md` — Language guide
-   - `~/.claude/skills/review/guides/{framework}.md` — Framework guide (if applicable)
-
-   ## Acceptance Criteria
-   - [ ] Read target file completely
-   - [ ] Apply categories: Security, Correctness, Performance, Error Handling, Code Quality, Style, Single-File Design, Comment Hygiene (plus anything else discovered)
-   - [ ] Document all findings with severity, category, line numbers, evidence, and fix
-   - [ ] Only flag issues completable within this single file
+   Review guides (read before analyzing matching files):
+   - ~/.claude/skills/review/guides/{guide1}.md
+   - ~/.claude/skills/review/guides/{guide2}.md
    ```
 
-   Run lint after creating all tasks (see todo skill for execution options).
+   Subagents create analyze-*.md files, write findings, commit, and return one-line summaries. They do NOT create refactor tasks.
 
-5. **Spawn subagents** — batch analysis tasks using the Batching Strategy:
+5. **Validate and create refactor tasks** — wait for ALL analysis subagents to complete. Spawn validation subagents (using the `model` parameter, NOT haiku):
 
-   **Parallel (default):** spawn one `general-purpose` subagent per batch, all in parallel.
-
-   **Serial (`--serial`):** spawn one `general-purpose` subagent per task, sequentially (one at a time). Still uses subagents — serial means sequential execution, not main-context execution. This protects parent context from growing with each analysis.
-
-   All subagent `Task` calls MUST use the `model` parameter from `--model` flag and the prompt template below.
-
-6. **Validate subagent output** — spawn a validation subagent (model: `haiku` is sufficient) for each batch:
-
-   Validation subagent prompt:
    ```
-   You are validating Stage 1 code review output. For each analysis task below:
-   1. Read the analysis task file. Confirm `status: done` and `## Findings` section exists with content.
-   2. Confirm all acceptance criteria are `[x]`.
-   3. For each refactor task that was created, verify its `## Findings to Address` entries
-      appear verbatim in the corresponding analysis task's `## Findings` section.
-      If a refactor task has findings NOT in the analysis, report it as INVALID.
-   4. For EVERY Critical and Warning finding: re-read the source file at the claimed line number.
-      Verify the `Evidence:` snippet matches the actual code. Report mismatches as FABRICATED.
-   5. Report a summary: tasks validated, findings verified, any issues found.
+   Read `~/.claude/skills/review/validate-agent.md` — those are your complete instructions.
 
-   Analysis tasks: {list}
-   Refactor tasks: {list}
+   Analysis tasks to validate:
+   - .agents/TODO/analyze-{slug1}.md
+   - .agents/TODO/analyze-{slug2}.md
    ```
 
-   After validation subagents return, the parent handles any flagged issues (delete invalid refactor tasks, re-analyze incomplete tasks). Count total findings and refactor tasks.
+   Validation subagents verify findings against source code, delete fabricated findings, and create refactor tasks for validated Critical/Warning findings. Parent handles any flagged issues from the validation summary.
 
-7. **Complete:** Run lint. Update `.review-state` counts. Report:
+6. **Lint and report** — spawn haiku subagent: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`. Then report:
 
    ```
    Stage 1 Complete
    ────────────────
-   Files analyzed: 8
-   Findings: 3 Critical, 7 Warning, 12 Suggestion
-   Refactor tasks created: 5 (2 P1, 3 P2)
+   Files analyzed: {N}
+   Validation: {N} fabricated removed, {N} false positives removed, {N} downgraded
+
+   Refactor tasks ({N}):
+     P1: refactor-{slug} — {title} ({N} Critical, {N} Warning)
+     P2: refactor-{slug} — {title} ({N} Warning)
+
+   Files with no actionable findings: {list}
    ```
 
-### Subagent Prompt (Stage 1)
-
-Each subagent receives a short prompt — the full instructions live in `analyze-agent.md`:
-
-```
-Read `~/.claude/skills/review/analyze-agent.md` — those are your complete instructions.
-
-Analysis tasks to process:
-- .agents/TODO/analyze-{slug1}.md
-- .agents/TODO/analyze-{slug2}.md
-
-Review guides (read each before analyzing files that match its extensions/framework):
-- ~/.claude/skills/review/guides/typescript.md (for .ts/.tsx files)
-- ~/.claude/skills/review/guides/react.md (for .tsx files using React)
-```
-
-**Guide delivery:** pass guide *paths*, not content. The subagent reads guides on-demand as it encounters relevant files, rather than loading everything upfront. This keeps the prompt small and lets guides compete less with the instruction file for context attention.
-
-**Guide count in batching:** each batch should require at most 2-3 guides. If a batch would need more (e.g., files spanning 4+ frameworks), split the batch by language/framework instead. This is more important than file count — a batch of 5 small files needing 1 guide is better than 2 files needing 5 guides.
-
-The subagent reads its own instructions, reads the source files, writes findings into the analysis task files, creates refactor tasks, and commits — all autonomously. The parent does NOT rewrite or relay findings.
+   List every refactor task with its priority and finding counts so the user can audit before running Stage 2.
 
 ---
 
 ## Stage 2: Refactoring
 
-Executes refactor tasks through the **full `/todo work` protocol**. Every task MUST go through all 4 phases: **plan → execute → verify → complete**. Skipping phases (especially verify and complete) is the most common failure mode — do not allow it.
+Subagents execute refactor tasks through the full 4-phase work protocol (plan → execute → verify → complete).
 
 ### Parent Procedure
 
-1. **Discover tasks** — glob `.agents/TODO/refactor-*.md`. Select where tags contain both `review` and `refactor`, and `status` is `pending`. Sort by priority (P1 first), then created date. If none: "No refactoring tasks. Run `/review analyze <path>` first."
+1. **Discover tasks** — glob `.agents/TODO/refactor-*.md`. Read frontmatter only (status + priority + tags). Select where tags contain `review` and `refactor`, status is `pending`. Sort by priority (P1 first), then created date. If none found: "No refactoring tasks."
 
-2. **Execute** — each refactor task owns exactly one file (1:1 ownership). No two tasks touch the same file. This enables safe parallel execution.
+2. **Batch and spawn subagents** — group by file size:
 
-   **Parallel:** batch tasks using the Batching Strategy. Spawn `general-purpose` subagents with the `model` parameter from `--model` flag and the prompt below.
+   | File size | Tasks per subagent |
+   |-----------|-------------------|
+   | <200 lines | 5-8 |
+   | 200-500 lines | 3-5 |
+   | 500+ lines | 1-2 |
 
-   **Serial:** process each task in main context following the same 4-phase protocol.
+   Each subagent `Task` call uses `subagent_type: "general-purpose"`, the `model` parameter, and this prompt:
 
-3. **Validate** — after subagents return, rigorously check each task file:
+   ```
+   Read `~/.claude/skills/review/refactor-agent.md` — those are your complete instructions.
+
+   Refactor tasks to process:
+   - .agents/TODO/refactor-{slug1}.md
+   - .agents/TODO/refactor-{slug2}.md
+   ```
+
+3. **Validate** — after subagents return, check each task file:
    - `status: done` in frontmatter
-   - ALL 4 required sections present: `## Acceptance Criteria`, `## Verify Plan`, `## Verify Report`, `## Work Report`
-   - Every acceptance criterion is `[x]` or `[E]` (none left `[ ]`)
-   - Every verify plan item is `[x]`
-   - Work report has all 5 subsections
-   - If ANY section is missing or incomplete: **re-read the task, identify gaps, fix in parent context**
-   - Collect any `archrev-refactor-*` tasks from escalation
-   - Run lint
+   - ALL 4 sections present: `## Acceptance Criteria`, `## Verify Plan`, `## Verify Report`, `## Work Report`
+   - All criteria `[x]` or `[E]` (none `[ ]`)
+   - If incomplete: re-read task, identify gaps, fix in parent context
+   - Collect `archrev-refactor-*` escalation tasks
 
-4. **Report:**
+4. **Lint and report** — spawn haiku subagent for lint. Then report:
 
    ```
-   Stage 2 Complete
-   ────────────────
-   Tasks completed: 5/5
-   Commits: 5
-   Escalated: 2 (→ archrev-refactor-*)
-   Failures: 0
+   Stage 2 Complete — Tasks: {done}/{total}, Commits: {N}, Escalated: {N}, Failures: {N}
    ```
-
-### Subagent Prompt (Stage 2)
-
-Each subagent receives a short prompt — the full instructions live in `refactor-agent.md`:
-
-```
-Read `~/.claude/skills/review/refactor-agent.md` — those are your complete instructions.
-
-Refactor tasks to process:
-- .agents/TODO/refactor-{slug1}.md
-- .agents/TODO/refactor-{slug2}.md
-```
-
-The subagent reads its own instructions (including the 4-phase work protocol, verification standards, cross-file escalation, and git discipline), then executes all assigned tasks autonomously.
-
----
-
-## Batching Strategy
-
-**Target:** ~66% context window usage per subagent (input + reasoning + output).
-
-| Stage | File size | Tasks per subagent |
-|-------|-----------|-------------------|
-| Stage 1 (analysis) | <200 lines | 3-5 |
-| Stage 1 (analysis) | 200-500 lines | 2-3 |
-| Stage 1 (analysis) | 500+ lines | 1 |
-| Stage 2 (refactoring) | <200 lines | 5-8 |
-| Stage 2 (refactoring) | 200-500 lines | 3-5 |
-| Stage 2 (refactoring) | 500+ lines | 1-2 |
-
-Add ~500 lines overhead per guide per subagent. If only a few tasks exist, a single subagent handles all.
 
 ---
 
 ## Guide Management
 
-### Location
+Guides live at `~/.claude/skills/review/guides/{name}.md` (language or framework). Multiple guides apply simultaneously (e.g., TypeScript + React for `.tsx`).
 
-`~/.claude/skills/review/guides/{name}.md` — named by language or framework.
-
-### Route: guide-manage
-
-Parse token after `guide`:
-- **`list`** — glob `~/.claude/skills/review/guides/*.md`, list with metadata
-- **`<name>`** — show if exists, trigger creation if missing
-
-### Guide creation flow
-
-When a review needs a guide that doesn't exist:
-
-1. Detect language from extensions, frameworks from dependency manifests
-2. Ask user: **"Create {name} review guide? (Recommended)"** / "Skip for now"
-3. If creating:
-   a. Generate from agent knowledge of best practices, common pitfalls, security patterns
-   b. Cross-reference: OWASP for security, ecosystem linters (eslint, clippy, pylint), official style guides, framework docs
-   c. Write to `~/.claude/skills/review/guides/{name}.md`
-   d. Present to user for review before first use
-4. If skipped: proceed without guide, note in output
-
-### Guide layering
-
-Multiple guides apply simultaneously. A React + TypeScript file needs both `typescript.md` and `react.md`. An Express route handler needs `typescript.md` and `express.md`.
-
-**Guides are supplementary, not primary.** Rely first on your own knowledge. Guides add ecosystem-specific precision.
+- `guide list` — glob guides, show metadata
+- `guide <name>` — show if exists; if missing, ask user to create (generate from agent knowledge + OWASP/linter/style guide cross-reference) or skip
 
 ---
 
-## State Files
+## State Files (gitignored)
 
-### `.agents/TODO/.review-state` (gitignored)
-
-Created when a multi-stage review starts. Checked on every `/review` invocation to enable resume. Deleted when review completes.
-
+**`.agents/TODO/.review-state`** — created at review start, deleted on completion:
 ```yaml
-stage: 1                        # 1 (analysis) or 2 (refactoring)
-source: path                    # "path" or "changed"
-git-range: abc123..HEAD         # only when source: changed
+stage: 1
+source: path          # or "changed"
 path: src/lib/
-mode: parallel                  # or serial
+mode: parallel
 started: 2026-02-20T14:30:00Z
 analyze-total: 12
 analyze-done: 7
@@ -378,36 +190,13 @@ refactor-total: 0
 refactor-done: 0
 ```
 
-### `.agents/TODO/.review-last-commit` (gitignored)
-
-Written when a `/review changed` completes. Read on next `/review changed` (no args) to determine base commit. Contains HEAD at review **start**, not completion.
-
+**`.agents/TODO/.review-last-commit`** — written when `/review changed` completes:
 ```yaml
-commit: abc123def456789...
+commit: abc123def456789
 date: 2026-02-21T12:23:00Z
-files-reviewed: 12
-findings: 3 Critical, 7 Warning
 ```
-
-If this file doesn't exist, `/review changed` defaults to `HEAD~1`.
-
----
 
 ## Git Discipline
 
 - **Stage 1:** Task tracking commits only (`[todo]` prefix). Zero code changes.
-- **Stage 2:** Code commits (source only, concise *why*) + task tracking commits (`.agents/TODO/` only, `[todo]` prefix). Never mix.
-
----
-
-## Slug Conventions
-
-- Analysis: `analyze-{file-slug}` (e.g., `analyze-src-lib-api-client`)
-- Refactoring: `refactor-{file-slug}` (e.g., `refactor-src-lib-api-client`)
-- File slug: strip extension, replace `/` and `.` with `-`, collapse dashes
-
----
-
-## Appendix: Cross-File Escalation
-
-Stage 2 subagents have the full escalation protocol in `refactor-agent.md`. For the parent's validation purposes: escalated findings are marked `[E]` in acceptance criteria and generate `archrev-refactor-*` tasks tagged `[architecture-review, refactor]`. Collect these during Stage 2 validation.
+- **Stage 2:** Code commits (source only) + task tracking commits (`.agents/TODO/` only, `[todo]` prefix). Never mix.

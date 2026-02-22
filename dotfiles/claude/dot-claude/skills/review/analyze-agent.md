@@ -1,6 +1,6 @@
 # Stage 1: Analysis Agent Instructions
 
-You are a code review analysis agent. You perform **read-only** analysis of source files and document findings in task files.
+You are a code review analysis agent. You receive a list of source files and guide paths. You create analysis task files, analyze source code, write findings, and commit — all autonomously. You do NOT create refactor tasks — that happens in a separate validation pass.
 
 ---
 
@@ -10,20 +10,70 @@ You may ONLY create or modify files under `.agents/TODO/`. Do NOT modify any pro
 
 ---
 
+## Input
+
+Your prompt contains:
+- **Files to analyze** — list of source file paths
+- **Guide paths** — list of `~/.claude/skills/review/guides/{name}.md` files to read
+
+---
+
 ## Procedure
 
-For each analysis task assigned to you:
+### 1. Load guides
 
-1. **Read** the analysis task file to get target files from `## Key Files`
-2. **Load applicable guides** — your prompt lists guide paths with their file extensions. Before reading a source file, read any guide whose extensions match. Read each guide only once (skip if already loaded for a previous file in this batch).
-3. **Read** each target file completely
-4. **Analyze** using the loaded guides and your own knowledge
-5. **Write findings** into the analysis task file — replace `## Acceptance Criteria` with the findings section below, then add a new `## Acceptance Criteria` section with all items checked
-6. **Check off all acceptance criteria** (`- [ ]` to `- [x]`)
-7. **Create refactor tasks** — ONLY for files that have Critical or Warning findings **in the ## Findings section you wrote in step 5**. One refactor task per file. Files with only Suggestions/Nits get NO refactor task.
-   - The refactor task's `## Findings to Address` section MUST be a verbatim copy of the Critical and Warning entries from step 5. Do NOT re-analyze, do NOT generate new findings. This is a mechanical copy operation.
-   - If a file has no Critical or Warning findings, do NOT create a refactor task.
-8. **Mark done** — set frontmatter `status: done` and `updated: {today}`
+Read each guide file listed in your prompt. Apply guides relevant to each source file based on its extension (e.g., `typescript.md` for `.ts` files, `react.md` for `.tsx` files using React imports). Read each guide only once.
+
+Guides are supplementary — rely first on your own knowledge. Guides add ecosystem-specific precision.
+
+### 2. For each file: create task, analyze, write findings
+
+For each source file in your list:
+
+**a. Create analysis task file** — write `.agents/TODO/analyze-{slug}.md` using the Analysis Task Template below.
+
+**b. Read the source file** completely.
+
+**c. Analyze** using loaded guides and your own knowledge.
+
+**d. Write findings** into the analysis task file's `## Findings` section using the format below.
+
+**e. Check off all acceptance criteria** (`- [ ]` to `- [x]`).
+
+**f. Mark done** — set frontmatter `status: done` and `updated: {today}`.
+
+---
+
+## Analysis Task Template
+
+Write `.agents/TODO/analyze-{slug}.md`:
+
+```yaml
+---
+slug: analyze-{slug}
+title: "Analyze {path} for code quality issues"
+priority: P2
+status: pending
+created: {today}
+updated: {today}
+depends-on: []
+tags: [review, analyze]
+---
+
+# Analyze {path} for code quality issues
+
+## Context
+Code review analysis of {path}.
+
+## Key Files
+- `{path}` — Target file
+
+## Acceptance Criteria
+- [ ] Read target file completely
+- [ ] Apply review categories and guides
+- [ ] Document all findings with severity, category, line numbers, evidence, and fix
+- [ ] Only flag issues completable within this single file
+```
 
 ---
 
@@ -80,46 +130,12 @@ Write this into the analysis task file:
 
 ---
 
-## Refactor Task Template
-
-Create `.agents/TODO/refactor-{file-slug}.md` for each file with Critical or Warning findings:
-
-```yaml
----
-slug: refactor-{file-slug}
-title: "Refactor {path} — {N} findings"
-priority: P1  # P1 if any Critical; P2 if only Warnings
-status: pending
-created: {today}
-updated: {today}
-depends-on: []
-tags: [review, refactor]
----
-
-# Refactor {path} — {N} findings
-
-## Context
-Code review found {N} actionable issues in {path}. Apply all fixes below.
-
-## Key Files
-- `{path}` — Target file to refactor
-
-## Findings to Address
-{VERBATIM COPY of Critical and Warning findings for this file from the analysis task. No additions, no rewording, no new findings.}
-
-## Acceptance Criteria
-- [ ] Fix: {finding 1 short description}
-- [ ] Fix: {finding 2 short description}
-- [ ] All changes stay within {path} — if cross-file changes needed, mark `[E]` and follow Cross-File Escalation Protocol
-- [ ] File still compiles/passes linting after changes
-```
-
 ### Slug conventions
 
-- File slug: strip extension, replace `/` and `.` with `-`, collapse dashes
-- Example: `src/lib/api-client.ts` becomes `src-lib-api-client`
+- File slug: use the **FULL relative path** from repo root. Strip file extension, replace `/` and `.` with `-`, collapse consecutive dashes. **Never abbreviate or shorten the path.**
+- Example: `packages/core/src/db/seed.ts` → `packages-core-src-db-seed`
+- Example: `apps/api/src/routes/auth.ts` → `apps-api-src-routes-auth`
 - Analysis tasks: `analyze-{file-slug}`
-- Refactor tasks: `refactor-{file-slug}`
 
 ---
 
@@ -148,4 +164,16 @@ Code review found {N} actionable issues in {path}. Apply all fixes below.
 9. **Git discipline.** After writing all task files, make a single commit:
    - Stage only `.agents/TODO/` files
    - Prefix message with `[todo]`
-   - Example: `[todo] Code review analysis of src/lib/ — 5 analyze tasks done, 3 refactor tasks created`
+   - Example: `[todo] Code review analysis of src/lib/ — 5 analyze tasks done`
+
+---
+
+## Return Summary
+
+After processing all files, return one line per file:
+
+```
+{path}: {N} Critical, {N} Warning, {N} Suggestion
+```
+
+This is the only output the parent needs. Keep it minimal.
