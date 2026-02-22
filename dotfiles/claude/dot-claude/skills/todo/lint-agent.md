@@ -26,7 +26,18 @@ h. **Warn** if >50 active task files
 
 Report any errors or warnings found.
 
-### 3. Auto-Archive Done Tasks
+### 3. Move Done Tasks
+
+Any active task file (in `.agents/TODO/`) with `status: done` must be moved to `.agents/TODO/done/`. These are completed tasks that haven't been relocated yet.
+
+```bash
+# For each active task with status: done, move to done/
+mv .agents/TODO/{slug}.md .agents/TODO/done/{slug}.md
+```
+
+Create `.agents/TODO/done/` if it doesn't exist.
+
+### 4. Auto-Archive Done Tasks
 
 Move tasks from `.agents/TODO/done/` to `.agents/TODO/archive/done/YYYY-MM-DD/` when:
 - Task's `updated` date is >24h ago (use the task's `updated` date for the archive folder name)
@@ -34,7 +45,7 @@ Move tasks from `.agents/TODO/done/` to `.agents/TODO/archive/done/YYYY-MM-DD/` 
 
 Create the archive date directories as needed (`mkdir -p`).
 
-### 4. Regenerate INDEX.md
+### 5. Regenerate INDEX.md
 
 Read all active task files + done/ tasks (not archived). Group by status. Sort pending and backlog by priority then by created date (oldest first).
 
@@ -86,14 +97,14 @@ Write `.agents/TODO/INDEX.md` with this format:
 - Counts in section headers reflect actual task count for that status
 - Omit empty status sections entirely
 
-### 5. Commit
+### 6. Commit
 
 Stage only `.agents/TODO/` files and commit with `[todo]` prefix:
 ```
 [todo] Lint: validate N tasks, archive M done, regenerate INDEX
 ```
 
-### 6. Report
+### 7. Report
 
 Output a summary:
 ```
@@ -102,6 +113,7 @@ Lint Complete
 Active tasks: N
 Errors: N
 Warnings: N
+Moved to done: N tasks
 Archived: N done tasks
 INDEX.md: regenerated
 ```

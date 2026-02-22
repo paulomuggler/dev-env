@@ -2,7 +2,7 @@
 name: todo
 description: Manage TODO tasks — create, track, execute, and archive tasks using file-per-task system
 user-invocable: true
-disable-model-invocation: true
+disable-model-invocation: false
 arguments: $ARGUMENTS
 ---
 
@@ -453,13 +453,17 @@ Verify that a task's changes work correctly. Can be used standalone or as part o
       | `*.test.*` or `*.spec.*` | **MUST** run the test files |
       | Any code with nearby test files | Run related tests |
 
-   c. **TypeScript check** — always run `tsc --noEmit` if TS files changed (necessary but NOT sufficient for UI changes)
+   c. **Static checks** — always run if TS/JS files changed:
+      - `pnpm lint` (Biome) — catches lint and format issues
+      - `tsc --noEmit` — catches type errors
+      Both must pass. Run them in parallel if possible.
 
 5. **Append `## Verify Plan`** to the task file with checkboxes:
    ```markdown
    ## Verify Plan
    - [ ] AC: Can drag-drop nodes → Playwright: navigate to /workflows/editor, verify palette renders
    - [ ] AC: Saves to valid YAML → Load editor, save, verify YAML output
+   - [ ] Biome lint passes
    - [ ] TypeScript compiles cleanly
    - [ ] Related tests pass: pnpm test --filter taskmill-ui
    ```
@@ -477,6 +481,7 @@ Verify that a task's changes work correctly. Can be used standalone or as part o
    ## Verify Report
    - [x] AC: Can drag-drop nodes — Verified: palette renders 7 node types, drag creates node on canvas
    - [x] AC: Saves to valid YAML — Verified: save produces valid YAML with all step types
+   - [x] Biome lint passes — `pnpm lint` exit code 0
    - [x] TypeScript compiles cleanly — `tsc --noEmit` exit code 0
    - [x] Tests pass — 42/42 passing
    ```
