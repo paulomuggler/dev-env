@@ -155,7 +155,7 @@ Write this into the analysis task file:
 
 5. **Read existing comments and guards.** Code often already documents trust boundaries, intentional design decisions, or accepted tradeoffs. If the code has a comment explaining *why* something is done a certain way, your finding must engage with that rationale — not just flag the pattern.
 
-6. **Do NOT read `.agents/TODO/archive/`** or any previously-created task files. Your findings must come exclusively from reading the current source files.
+6. **Do NOT read `.agents/TODO/done/`, `.agents/TODO/archive/`,** or any previously-created task files. Your findings must come exclusively from reading the current source files. Ignore any existing analyze or refactor tasks — even if they cover the same files.
 
 7. **Guides are supplementary, not primary.** Use them for ecosystem-specific precision. Rely first on your own judgment.
 
@@ -173,7 +173,7 @@ Write this into the analysis task file:
 After processing all files, return one line per file:
 
 ```
-{path}: {N} Critical, {N} Warning, {N} Suggestion
+{path}: {N} Critical, {N} Warning, {N} Suggestion, {N} Nit
 ```
 
 This is the only output the parent needs. Keep it minimal.
