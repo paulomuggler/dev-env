@@ -179,6 +179,17 @@ Parse the first word of `$ARGUMENTS` to route:
 
 Validate all task files, regenerate INDEX.md, and auto-archive old done tasks.
 
+### Execution context
+
+When running lint in **main context**, execute the procedure below directly.
+
+When running lint from a **subagent** (or when you want to offload lint to preserve parent context), spawn a `general-purpose` subagent with `model: "haiku"` and prompt:
+```
+Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/
+```
+
+Other skills that say "run lint" should use whichever method is appropriate for their context. The lint-agent.md file contains the same procedure as below, packaged for subagent consumption.
+
 ### Procedure
 
 1. Glob `.agents/TODO/*.md` (exclude INDEX.md) to find all active task files

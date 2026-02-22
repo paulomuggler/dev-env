@@ -194,8 +194,7 @@ Zero code modifications. Creates TODO tasks with findings.
    - [ ] Only flag issues completable within this single file
    ```
 
-   Run lint after creating all tasks — spawn a `general-purpose` subagent with `model: "haiku"`:
-   `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`
+   Run lint after creating all tasks (see todo skill for execution options).
 
 5. **Spawn subagents** — batch analysis tasks using the Batching Strategy:
 
@@ -225,7 +224,7 @@ Zero code modifications. Creates TODO tasks with findings.
 
    After validation subagents return, the parent handles any flagged issues (delete invalid refactor tasks, re-analyze incomplete tasks). Count total findings and refactor tasks.
 
-7. **Complete:** Spawn a lint subagent (`model: "haiku"`, prompt: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`). Update `.review-state` counts. Report:
+7. **Complete:** Run lint. Update `.review-state` counts. Report:
 
    ```
    Stage 1 Complete
@@ -281,7 +280,7 @@ Executes refactor tasks through the **full `/todo work` protocol**. Every task M
    - Work report has all 5 subsections
    - If ANY section is missing or incomplete: **re-read the task, identify gaps, fix in parent context**
    - Collect any `archrev-refactor-*` tasks from escalation
-   - Spawn a lint subagent (`model: "haiku"`, prompt: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`)
+   - Run lint
 
 4. **Report:**
 
