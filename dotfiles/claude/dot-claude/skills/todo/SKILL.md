@@ -179,87 +179,13 @@ Parse the first word of `$ARGUMENTS` to route:
 
 Validate all task files, regenerate INDEX.md, and auto-archive old done tasks.
 
-### Execution context
+**Always runs as a haiku subagent.** Spawn a `general-purpose` subagent with `model: "haiku"`:
 
-When running lint in **main context**, execute the procedure below directly.
-
-When running lint from a **subagent** (or when you want to offload lint to preserve parent context), spawn a `general-purpose` subagent with `model: "haiku"` and prompt:
 ```
 Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/
 ```
 
-Other skills that say "run lint" should use whichever method is appropriate for their context. The lint-agent.md file contains the same procedure as below, packaged for subagent consumption.
-
-### Procedure
-
-1. Glob `.agents/TODO/*.md` (exclude INDEX.md) to find all active task files
-2. Also glob `.agents/TODO/done/*.md` for done-reference checking
-3. For each active task file, parse YAML frontmatter and validate:
-
-**Lint checks:**
-   a. Required fields present: `slug`, `title`, `priority`, `status`, `created`, `updated`, `depends-on`, `tags`
-   b. `slug` matches filename (without `.md`)
-   c. `priority` is one of: `P0`, `P1`, `P2`, `P3`, `P4`, `P5`
-   d. `status` is one of: `pending`, `in-progress`, `blocked`, `done`, `backlog`
-   e. Each entry in `depends-on` references an existing task slug (active or done)
-   f. No circular dependencies (DFS cycle detection across all tasks)
-   g. No duplicate slugs across all active task files
-   h. Warn if >50 active task files
-
-4. **Auto-archive:** Move tasks from `.agents/TODO/done/` to `.agents/TODO/archive/done/YYYY-MM-DD/` based on:
-   - Tasks with `updated` date >24h ago → archive using the task's `updated` date for the folder name
-   - If count of done tasks in `.agents/TODO/done/` exceeds 30 → archive the oldest ones (by `updated` date) into date-bucketed folders until count is ≤ 30
-
-5. Report any errors/warnings found
-6. Regenerate `.agents/TODO/INDEX.md` using the format below
-
-### INDEX.md generation
-
-Read all active task files + done/ tasks (not archived), group by status. Sort pending and backlog by priority then by created date (oldest first).
-
-```markdown
-# TODO Index
-> Auto-generated from task files. Run `/todo lint` to regenerate.
-
-## Pending (N)
-
-### P0 - Critical
-- [ ] [slug](slug.md) - Title
-
-### P1 - High
-- [ ] [slug](slug.md) - Title
-
-### P2 - Normal
-- [ ] [slug](slug.md) - Title
-
-### P3 - Low
-- [ ] [slug](slug.md) - Title
-
-### P4 - Someday
-- [ ] [slug](slug.md) - Title
-
-### P5 - Wishlist
-- [ ] [slug](slug.md) - Title
-
-## In Progress (N)
-- [~] [slug](slug.md) - Title
-
-## Blocked (N)
-- [!] [slug](slug.md) - Title (blocked by: dep1, dep2)
-
-## Done (N)
-- [x] [slug](slug.md) - Title
-
-## Backlog (N)
-
-### P2 - Normal
-- [-] [slug](slug.md) - Title
-
-### P3 - Low
-- [-] [slug](slug.md) - Title
-```
-
-Only include priority sub-headings that have tasks. Counts in section headers reflect actual task count for that status.
+The full procedure and INDEX.md format live in `lint-agent.md` (single source of truth).
 
 ---
 
