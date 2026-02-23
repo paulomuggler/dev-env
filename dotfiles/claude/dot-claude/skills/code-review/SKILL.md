@@ -254,7 +254,7 @@ Zero code modifications. Subagents create task files and write findings.
    ```
    Convergence (vs {prior batch name})
    ──────────────────────────────────
-   Confirmed: {N}  Consolidated: {N}  Not reproduced: {N}  New perspective: {N}
+   Confirmed: {N}  Consolidated: {N}  Fixed by refactor: {N}  Not reproduced: {N}  New perspective: {N}
    New on changed code: {N}  New on unchanged code: {N}
    Changes on confirmed: {N} severity, {N} category
    ```
@@ -270,10 +270,12 @@ Zero code modifications. Subagents create task files and write findings.
 
    Remember to resolve `~` per rule 6. Lint only touches TODO root — the reviews/ subdirectory is automatically excluded.
 
-12. **If analyze-only:** spawn a haiku subagent to move the batch to done:
-   - `git mv {batch} .agents/TODO/reviews/done/{batch-name}`
-   - Commit with `[todo]` prefix
-   - Parent deletes `.review-state`
+12. **If analyze-only:** check if any `refactor-*.md` files exist in the batch (glob `{batch}/refactor-*.md`).
+   - **If refactor tasks exist:** leave the batch active (so `/code-review refactor` can find it). Delete `.review-state` but do NOT move the batch.
+   - **If no refactor tasks:** spawn a haiku subagent to move the batch to done:
+     - `git mv {batch} .agents/TODO/reviews/done/{batch-name}`
+     - Commit with `[todo]` prefix
+     - Parent deletes `.review-state`
 
 ---
 

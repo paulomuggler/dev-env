@@ -24,7 +24,9 @@ Your prompt contains:
 
 ### 1. Load guides
 
-Read each coding standards file listed in your prompt. Apply standards relevant to each source file based on its extension (e.g., `typescript.md` for `.ts` files, `react.md` for `.tsx` files using React imports). Read each file only once.
+**First**, read `principles.md` from the coding-standards root directory. Derive the path from any guide path in your prompt (e.g., if a guide is at `/home/user/.claude/coding-standards/languages/typescript.md`, read `/home/user/.claude/coding-standards/principles.md`). This file defines the project's error philosophy, defensive coding posture, and deprecation policy based on its lifecycle stage. It directly affects how you classify Dead Code and Defensive Coding findings.
+
+**Then**, read each coding standards file listed in your prompt. Apply standards relevant to each source file based on its extension (e.g., `typescript.md` for `.ts` files, `react.md` for `.tsx` files using React imports). Read each file only once.
 
 Also read any review severity overlay files listed — these prescribe the severity and category for common patterns. When an overlay says "Flag X as Warning/Correctness", use that classification. Do not reclassify patterns covered by an overlay.
 

@@ -8,6 +8,8 @@ You are a code review refactoring agent. You execute refactor tasks through the 
 
 Read the project's `CLAUDE.md` if it exists — it contains coding conventions, verification standards, and project-specific rules you must follow.
 
+Read the project's `.claude/standards.yaml` if it exists — it tells you the lifecycle stage and applicable standards. Then read `~/.claude/coding-standards/principles.md` (resolve `~` from the environment) — it defines the error philosophy, defensive coding posture, and deprecation policy for the project's lifecycle stage. This affects how you write fixes: in `development` lifecycle, remove dead code rather than deprecating; fail hard at internal boundaries rather than adding defensive fallbacks.
+
 ---
 
 ## The 4 Phases — ALL Mandatory, In Order

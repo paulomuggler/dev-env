@@ -55,18 +55,21 @@ Write `{batch}/stage1-report.md`:
 
    e. **Detect consolidation.** After matching, check unmatched prior findings: if multiple unmatched findings in the same file share a similar evidence pattern (e.g., 3 unchecked `response.json() as` casts at different lines) AND at least one finding with that pattern was matched as confirmed, classify the unmatched ones as **consolidated** — the current round covered the same issue at a higher level rather than listing each instance.
 
-   f. **Classify** all findings into exactly one bucket:
+   f. **Load prior refactor tasks** (if prior manifest exists). Glob `{prior batch directory}/refactor-*.md`. For each, read the `## Findings to Address` or `## Acceptance Criteria` section to build a set of findings that were targeted for refactoring. A finding is "addressed by refactoring" if a refactor task in the prior batch has a matching acceptance criterion (same file, similar description/evidence).
+
+   g. **Classify** all findings into exactly one bucket:
       - **Confirmed** — exists in both rounds (matched by any priority level). This is the high-confidence set. Note severity or category changes on these.
       - **Consolidated** — exists in prior round, not individually matched, but the underlying pattern is covered by a confirmed finding in the same file. The current round described the same issue differently (fewer instances, pattern-level instead of instance-level).
-      - **Not reproduced** — exists in prior round but not in current round, and not consolidated. Lower confidence — the analyzer didn't find it this time, but the code hasn't necessarily changed.
+      - **Fixed by refactor** — exists in prior round but not in current round, AND a completed refactor task in the prior batch addressed this finding (check prior batch's `refactor-*.md` files for matching acceptance criteria or findings). This is expected absence — the code was changed to fix the issue.
+      - **Not reproduced** — exists in prior round but not in current round, not consolidated, and not fixed by refactoring. Lower confidence — the analyzer didn't find it this time on unchanged code. This is true reviewer variance.
       - **New perspective** — exists in current round but not in prior round. May be a genuine new insight or analyzer noise.
 
-   g. For each **new perspective** finding, run `git blame -L{line},{line} {file} --porcelain`, extract `committer-time`, compare vs prior round date:
+   h. For each **new perspective** finding, run `git blame -L{line},{line} {file} --porcelain`, extract `committer-time`, compare vs prior round date:
       - **on changed code** — line modified after prior round date
       - **on unchanged code** — line existed before prior round (analyzer found something it missed previously)
       - If git blame fails: "unknown origin"
 
-   h. Note severity and category changes on confirmed findings.
+   i. Note severity and category changes on confirmed findings.
 
 5. **Write the report**
 
@@ -109,6 +112,7 @@ If convergence data exists, append:
 |--------|-------|
 | Confirmed | {N} |
 | Consolidated | {N} |
+| Fixed by refactor | {N} |
 | Not reproduced | {N} |
 | New perspective | {N} |
 | — on changed code | {N} |
@@ -136,7 +140,13 @@ If convergence data exists, append:
 |------|----------|----------|------|--------|
 | {file} | {severity} | {category} | {line} | changed/unchanged/unknown |
 
-### Not Reproduced
+### Fixed by Refactor
+
+| File | Severity | Category | Line | Refactor Task |
+|------|----------|----------|------|---------------|
+| {file} | {severity} | {category} | {line} | {prior batch refactor task slug that addressed it} |
+
+### Not Reproduced (Reviewer Variance)
 
 | File | Severity | Category | Line | Evidence |
 |------|----------|----------|------|----------|
@@ -202,7 +212,7 @@ Omit the Escalations section if none exist.
 **Stage 1:**
 ```
 Stage 1 report written. {N} refactor tasks, {N} findings total.
-Convergence: {N} confirmed, {N} consolidated, {N} not reproduced, {N} new perspective ({N} changed, {N} unchanged)
+Convergence: {N} confirmed, {N} consolidated, {N} fixed by refactor, {N} not reproduced, {N} new perspective ({N} changed, {N} unchanged)
 ```
 (Omit convergence line if no prior manifest.)
 
