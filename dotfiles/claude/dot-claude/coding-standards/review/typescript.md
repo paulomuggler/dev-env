@@ -32,12 +32,24 @@ reclassify patterns listed here.
 | Functions >80 lines | Suggestion | Code Quality |
 | Functions >50 lines | Nit | Code Quality |
 | Nesting >3 levels deep | Suggestion | Code Quality |
-| Dead code (unreachable branches, unused imports) | Suggestion | Code Quality |
+| Dead code (unreachable branches, unused imports) | Warning | Dead Code |
+| Commented-out code | Warning | Dead Code |
+| `@deprecated` marker in development-lifecycle project | Warning | Dead Code |
+| `// TODO: remove` or `// legacy` or `// HACK` comment with stale code | Warning | Dead Code |
+| Re-export or alias for a renamed symbol | Warning | Dead Code |
+| Backwards compatibility fallback (old format branch, dual-format support) | Warning | Dead Code |
+| Feature flag for removed/disabled feature | Warning | Dead Code |
+| Wrapper function that only forwards to another function | Suggestion | Dead Code |
+| Config option that nothing reads | Warning | Dead Code |
+| Defensive fallback at internal boundary (`?? default` / `\|\| fallback` for data from own code) | Warning | Defensive Coding |
+| Null check / optional chaining on type-guaranteed non-null internal value | Warning | Defensive Coding |
+| try/catch returning default value instead of propagating at internal boundary | Warning | Defensive Coding |
+| Re-validating data already validated at system boundary | Suggestion | Defensive Coding |
+| Error handling for conditions that cannot occur given the types | Suggestion | Defensive Coding |
 | Duplicated logic (3+ identical blocks) | Suggestion | Code Quality |
 | Magic numbers/strings without named constant | Suggestion | Code Quality |
 | Stale/misleading comments | Nit | Comment Hygiene |
 | Obvious comments (`// increment counter`) | Nit | Comment Hygiene |
-| Commented-out code | Nit | Comment Hygiene |
 
 ## Rules
 
@@ -45,3 +57,4 @@ reclassify patterns listed here.
 2. **Do not downgrade Warning to Suggestion** for patterns in the table — use the prescribed severity.
 3. If a pattern is not in this table, use your best judgment but err toward lower severity.
 4. The `languages/typescript.md` guide has detailed examples for each pattern — reference it for context on what constitutes the pattern, but use THIS file for severity.
+5. **Read `principles.md`** for the project's error philosophy and lifecycle stage. Dead Code and Defensive Coding findings depend on the lifecycle — in `development`, dead code and unnecessary fallbacks are Warning; in `production`, some fallbacks may be intentional.

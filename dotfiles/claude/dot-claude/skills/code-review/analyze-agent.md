@@ -106,7 +106,11 @@ Code review analysis of {path}.
 
 Recommended (not exhaustive — flag anything within single-file scope):
 
-Security, Correctness, Performance, Error Handling, Code Quality, Style, Single-File Design, Comment Hygiene
+Security, Correctness, Performance, Error Handling, Code Quality, Dead Code, Defensive Coding, Style, Single-File Design, Comment Hygiene
+
+**Dead Code** — unreachable branches, unused imports/exports, commented-out code, `@deprecated` markers, backwards compatibility fallbacks, old format branches, re-exports aliasing renamed symbols, stale TODO/FIXME/HACK comments with associated code. In development lifecycle projects, all dead code should be deleted — not marked.
+
+**Defensive Coding** — fallbacks at internal boundaries (where hard failure is appropriate), null checks on type-guaranteed values from own codebase, try/catch returning defaults instead of propagating errors between components we control, re-validation of data already validated at the system boundary. Read `principles.md` for the project's error philosophy and lifecycle stage.
 
 ---
 

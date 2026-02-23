@@ -7,6 +7,7 @@ from the dev-env repo, symlinked to `~/.claude/coding-standards/`.
 
 ```
 coding-standards/
+├── principles.md      # Error philosophy, defensive coding, deprecation policy
 ├── languages/         # Language patterns, conventions, anti-patterns
 │   ├── typescript.md  # Used during both code generation and review
 │   ├── python.md
@@ -25,6 +26,7 @@ coding-standards/
 Each project has `.claude/standards.yaml`:
 
 ```yaml
+lifecycle: development    # development | staging | production
 languages: [typescript]
 frameworks: [hono, react, nats]
 ```
@@ -35,6 +37,8 @@ for a given task.
 
 ## Agent Behavior
 
+- **Always read `principles.md` first.** It defines error philosophy, defensive coding
+  posture, and deprecation policy based on the project's lifecycle stage.
 - **Code generation:** Read applicable `languages/` and `frameworks/` files
   before writing code in those languages/frameworks.
 - **Code review:** Read the above plus `review/` overlays for severity guidance.

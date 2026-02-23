@@ -32,10 +32,12 @@ system automatically — users should not need to invoke `/todo` for it to be fo
 ## Coding Standards
 
 When writing or modifying code, check `.claude/standards.yaml` for this project's applicable
-standards. Load relevant files from `~/.claude/coding-standards/languages/` and
-`~/.claude/coding-standards/frameworks/` before writing code. Record which files you consulted
-in work reports. If a guide is missing for a language or framework you're using, create it and
-update the project's `standards.yaml`.
+standards and lifecycle stage. Always read `~/.claude/coding-standards/principles.md` first —
+it defines the project's error philosophy, defensive coding posture, and deprecation policy
+based on the lifecycle stage. Then load relevant files from `~/.claude/coding-standards/languages/`
+and `~/.claude/coding-standards/frameworks/`. Record which files you consulted in work reports.
+If a guide is missing for a language or framework you're using, create it and update the
+project's `standards.yaml`.
 
 ## Git Commit Discipline
 

@@ -24,7 +24,7 @@ Both files are gitignored.
 
 | Category | What to Find |
 |----------|-------------|
-| Dead Code | Exported symbols with no importers. Orphan files (neither export consumed symbols nor are imported). Unreachable modules. |
+| Dead Code & Stale Deprecations | Exported symbols with no importers. Orphan files (neither export consumed symbols nor are imported). Unreachable modules. `@deprecated` markers with no removal timeline. Backwards compatibility shims, old format branches, re-exports aliasing renamed symbols, feature flags for removed features. In development lifecycle: all of these should be deleted, not marked. |
 | Circular Dependencies | Import cycles of any length. Distinguish between benign type-only cycles and problematic runtime cycles. |
 | God Files | Files with excessive size, too many exports, too many responsibilities. Files imported by a disproportionate number of other files (high fan-in). |
 | Duplication | Similar logic replicated across files — opportunities to extract shared modules. Near-identical functions, copy-paste patterns, parallel implementations. |
@@ -32,6 +32,7 @@ Both files are gitignored.
 | Coupling & Cohesion | Modules with excessive cross-boundary imports (tight coupling). Related logic scattered across too many files (low cohesion). High fan-out files. |
 | Inconsistent Patterns | Same problem solved differently across the codebase — error handling, config access, API client usage, logging, validation. |
 | API Surface | Modules exporting too much. Missing index/barrel files where they'd help, or barrel files re-exporting too much. |
+| Defensive Coding | Fallbacks at internal boundaries where hard failures are appropriate. Defensive null checks on type-guaranteed values across modules. try/catch swallowing errors between components we control. Read `principles.md` for the project's error philosophy. |
 
 **Not exhaustive.** Flag any architectural concern discovered, even if it doesn't fit these categories. Examples: missing auth middleware on route groups, chatty inter-service calls, N+1 patterns spanning service boundaries, configuration drift, raw infrastructure used directly in business logic.
 
