@@ -29,6 +29,14 @@ system automatically — users should not need to invoke `/todo` for it to be fo
 - **Skip task tracking:** Single-line fixes, answering questions, trivial formatting,
   exploration/research that won't produce code changes
 
+## Coding Standards
+
+When writing or modifying code, check `.claude/standards.yaml` for this project's applicable
+standards. Load relevant files from `~/.claude/coding-standards/languages/` and
+`~/.claude/coding-standards/frameworks/` before writing code. Record which files you consulted
+in work reports. If a guide is missing for a language or framework you're using, create it and
+update the project's `standards.yaml`.
+
 ## Git Commit Discipline
 
 - **Separate commit streams:** Never mix code changes with task tracking changes in the same commit.

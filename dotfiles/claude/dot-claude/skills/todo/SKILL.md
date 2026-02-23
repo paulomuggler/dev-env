@@ -127,6 +127,10 @@ When a task is completed, a `## Work Report` section is appended. Format:
 ### Files changed
 - `path/to/file.ts` — Description of changes
 
+### Sources Consulted
+- `~/.claude/coding-standards/languages/typescript.md` (if applicable)
+- `~/.claude/coding-standards/frameworks/hono.md` (if applicable)
+
 ### Follow-up
 - Any discovered work that became new tasks
 ```
@@ -319,6 +323,7 @@ Each phase transition: update `.work-state` **before** starting the new phase.
     - **How it was done:** Technical approach, tools/patterns used
     - **Decisions made:** Any non-obvious choices and their reasoning
     - **Files changed:** List of key files created/modified
+    - **Sources Consulted:** Which coding standards files from `~/.claude/coding-standards/` were read (if any)
     - **Follow-up:** Any discovered work that should become new tasks (create them)
 19. Set `status: done`, `updated` to today in the task file frontmatter
 20. **Notify completion:** Send OS notification via Bash:

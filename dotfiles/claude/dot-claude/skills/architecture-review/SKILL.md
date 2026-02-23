@@ -198,7 +198,7 @@ Multiple guides may apply to a single analysis. Load all that are relevant and s
 
 For a React + TypeScript codebase, both `typescript.md` and `react.md` would be loaded. Merge their guidance with your own knowledge. If a guide is missing, proceed using your own expertise — guide availability should never block analysis.
 
-Guide location: `~/.claude/skills/architecture-review/guides/{name}.md`
+Guide location: `~/.claude/coding-standards/languages/{lang}.md` and `~/.claude/coding-standards/frameworks/{framework}.md`
 
 #### Guide Detection
 
@@ -217,7 +217,7 @@ Detect languages and frameworks from the codebase:
 | `.swift` | swift |
 | `.sh`, `.bash`, `.zsh` | shell |
 
-For each detected language, check `~/.claude/skills/architecture-review/guides/{language}.md`. If a guide exists, load it. If missing, proceed without it — do not block analysis. Guide creation can be triggered separately via `/architecture-review guide <name>`.
+For each detected language, check `~/.claude/coding-standards/languages/{language}.md`. For each framework detected from imports/config, check `~/.claude/coding-standards/frameworks/{framework}.md`. If a guide is missing, proceed without it — do not block analysis. Guide creation can be triggered separately via `/architecture-review guide <name>`.
 
 ### Step 3: Create Tasks from Findings
 
@@ -373,9 +373,9 @@ Executes archrev-refactor tasks through the full `/todo work` protocol (plan, ex
 
 ### Guide location
 
-`~/.claude/skills/architecture-review/guides/{name}.md`
+Standards live at `~/.claude/coding-standards/` with `languages/`, `frameworks/`, and `review/` subdirectories.
 
-Guides are named by language or framework — not just language. A project might use `typescript.md`, `react.md`, and `express.md` simultaneously.
+A project might use `languages/typescript.md`, `frameworks/react.md`, and `frameworks/hono.md` simultaneously.
 
 ### What guides cover
 
@@ -398,7 +398,7 @@ Ecosystem-specific architectural knowledge that supplements your own expertise:
 
 Parse the second token of `$ARGUMENTS` after `guide`:
 
-- **`list`** — Glob `~/.claude/skills/architecture-review/guides/*.md`, list available guides with their metadata
+- **`list`** — Glob `~/.claude/coding-standards/{languages,frameworks,review}/*.md`, list available guides with their metadata
 - **`<name>`** — If guide exists, display it. If missing, trigger creation flow.
 
 ### Guide creation flow
@@ -410,7 +410,7 @@ When a guide doesn't exist:
 3. If user chooses to create:
    a. Generate from your knowledge of the language/framework's architectural best practices, common structural anti-patterns, and modularization idioms
    b. Cross-reference against ecosystem standards (official style guides, community conventions, linter rules)
-   c. Write to `~/.claude/skills/architecture-review/guides/{name}.md`
+   c. Write to `~/.claude/coding-standards/languages/{name}.md` or `~/.claude/coding-standards/frameworks/{name}.md`
    d. Present the guide to the user for review before first use
 4. If user skips: proceed with analysis using your own knowledge only (no guide file)
 

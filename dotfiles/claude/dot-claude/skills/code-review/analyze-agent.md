@@ -6,15 +6,17 @@ You are a code review analysis agent. You receive a list of source files and gui
 
 ## Write Restriction
 
-You may ONLY create or modify files under `.agents/TODO/`. Do NOT modify any project source files. This is read-only analysis.
+You may ONLY create or modify files under the **batch directory** provided in your prompt. Do NOT modify any project source files. This is read-only analysis.
 
 ---
 
 ## Input
 
 Your prompt contains:
+- **Batch directory** — path like `.agents/TODO/reviews/2026-02-23-1430-db/` where all output goes
 - **Files to analyze** — list of source file paths
-- **Guide paths** — list of `~/.claude/skills/code-review/guides/{name}.md` files to read
+- **Coding standards** — list of `~/.claude/coding-standards/languages/{lang}.md` and `~/.claude/coding-standards/frameworks/{framework}.md` files to read
+- **Review severity overlays** — list of `~/.claude/coding-standards/review/{name}.md` files with prescriptive severity/category mappings
 
 ---
 
@@ -22,15 +24,19 @@ Your prompt contains:
 
 ### 1. Load guides
 
-Read each guide file listed in your prompt. Apply guides relevant to each source file based on its extension (e.g., `typescript.md` for `.ts` files, `react.md` for `.tsx` files using React imports). Read each guide only once.
+Read each coding standards file listed in your prompt. Apply standards relevant to each source file based on its extension (e.g., `typescript.md` for `.ts` files, `react.md` for `.tsx` files using React imports). Read each file only once.
 
-Guides are supplementary — rely first on your own knowledge. Guides add ecosystem-specific precision.
+Also read any review severity overlay files listed — these prescribe the severity and category for common patterns. When an overlay says "Flag X as Warning/Correctness", use that classification. Do not reclassify patterns covered by an overlay.
+
+Standards are supplementary — rely first on your own knowledge. Standards add ecosystem-specific precision and severity consistency.
+
+**Accountability:** After loading guides, record every guide file path (and any other non-source reference file you read) in the analysis task's `## Sources Consulted` section. An analysis task without this section filled in is incomplete.
 
 ### 2. For each file: create task, analyze, write findings
 
 For each source file in your list:
 
-**a. Create analysis task file** — write `.agents/TODO/analyze-{slug}.md` using the Analysis Task Template below.
+**a. Create analysis task file** — write `{batch}/analyze-{slug}.md` using the Analysis Task Template below.
 
 **b. Read the source file** completely.
 
@@ -46,7 +52,7 @@ For each source file in your list:
 
 ## Analysis Task Template
 
-Write `.agents/TODO/analyze-{slug}.md`:
+Write `{batch}/analyze-{slug}.md`:
 
 ```yaml
 ---
@@ -73,6 +79,9 @@ Code review analysis of {path}.
 - [ ] Apply review categories and guides
 - [ ] Document all findings with severity, category, line numbers, evidence, and fix
 - [ ] Only flag issues completable within this single file
+
+## Sources Consulted
+(filled by analysis agent)
 ```
 
 ---
@@ -164,12 +173,14 @@ Write this into the analysis task file:
 
 6. **Do NOT read `.agents/TODO/done/`, `.agents/TODO/archive/`,** or any previously-created task files. Your findings must come exclusively from reading the current source files. Ignore any existing analyze or refactor tasks — even if they cover the same files.
 
-7. **Guides are supplementary, not primary.** Use them for ecosystem-specific precision. Rely first on your own judgment.
+7. **Standards are supplementary, not primary.** Use them for ecosystem-specific precision and severity consistency. Rely first on your own judgment. Review severity overlays are authoritative — use their prescribed severity/category for covered patterns.
 
 8. **Single-file scope only.** Only flag issues fixable within the target file. Cross-file concerns are out of scope.
 
-9. **Git discipline.** After writing all task files, make a single commit:
-   - Stage only `.agents/TODO/` files
+9. **Sources Consulted is mandatory.** Fill in the `## Sources Consulted` section of every analysis task with the full path of every standards file and non-source reference file you read. If you read `languages/typescript.md`, `frameworks/hono.md`, and `review/typescript.md`, list all three. This section is checked during validation — missing entries are flagged.
+
+10. **Git discipline.** After writing all task files, make a single commit:
+   - Stage only files under the batch directory
    - Prefix message with `[todo]`
    - Example: `[todo] Code review analysis of src/lib/ — 5 analyze tasks done`
 
