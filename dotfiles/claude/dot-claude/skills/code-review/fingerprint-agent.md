@@ -8,14 +8,15 @@ You are a mechanical extraction agent. You read completed analysis task files an
 
 ## Write Restriction
 
-You may ONLY create or modify `.agents/TODO/.review-findings.md`. Do NOT modify any other files.
+You may ONLY create or modify `{batch}/findings.md` where `{batch}` is the batch directory from your prompt. Do NOT modify any other files.
 
 ---
 
 ## Input
 
 Your prompt contains:
-- **Analysis task paths** — list of `.agents/TODO/analyze-*.md` file paths to extract from
+- **Batch directory** — path like `.agents/TODO/reviews/2026-02-23-1430-db/` where output goes
+- **Analysis task paths** — list of `{batch}/analyze-*.md` file paths to extract from
 - **Source path** — the top-level path that was reviewed (e.g., `packages/core/src/db/`)
 
 ---
@@ -48,7 +49,7 @@ If a finding has no fenced evidence block (legacy inline backtick format), extra
 
 ### 3. Write the manifest
 
-Write `.agents/TODO/.review-findings.md`:
+Write `{batch}/findings.md`:
 
 ```markdown
 # Findings Manifest

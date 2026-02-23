@@ -6,14 +6,15 @@ You validate analysis findings against source code and create refactor tasks fro
 
 ## Write Restriction
 
-You may ONLY create or modify files under `.agents/TODO/`. Do NOT modify any project source files.
+You may ONLY create or modify files under the **batch directory** provided in your prompt. Do NOT modify any project source files.
 
 ---
 
 ## Input
 
 Your prompt contains:
-- **Analysis tasks** — list of `.agents/TODO/analyze-*.md` file paths to validate
+- **Batch directory** — path like `.agents/TODO/reviews/2026-02-23-1430-db/` where all output goes
+- **Analysis tasks** — list of `{batch}/analyze-*.md` file paths to validate
 
 ---
 
@@ -48,14 +49,14 @@ When promoting, re-read the source at the claimed line to verify evidence first.
 
 **e. Create refactor task** — ONLY if the file has Critical or Warning findings after validation (including promoted ones). One refactor task per file.
 
-Use the Refactor Task Template below. The `## Findings to Address` section MUST be a verbatim copy of the **validated** Critical and Warning findings from the analysis task. No additions, no rewording, no new findings.
+Write `{batch}/refactor-{file-slug}.md` using the Refactor Task Template below. The `## Findings to Address` section MUST be a verbatim copy of the **validated** Critical and Warning findings from the analysis task. No additions, no rewording, no new findings.
 
 **f. Update the analysis task** — rewrite the `## Findings` section if any findings were removed, downgraded, or promoted.
 
 ### 2. Commit
 
 After processing all analysis tasks, make a single commit:
-- Stage only `.agents/TODO/` files
+- Stage only files under the batch directory
 - Prefix message with `[todo]`
 - Example: `[todo] Validate analysis findings — 3 refactor tasks created, 1 fabricated finding removed`
 
@@ -63,7 +64,7 @@ After processing all analysis tasks, make a single commit:
 
 ## Refactor Task Template
 
-Create `.agents/TODO/refactor-{file-slug}.md`:
+Create `{batch}/refactor-{file-slug}.md`:
 
 ```yaml
 ---

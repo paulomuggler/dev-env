@@ -79,7 +79,7 @@ If ANY section is missing or incomplete, the task is NOT done.
 Two separate commit streams. Never mix them.
 
 1. **Code commits** — source files only, concise messages explaining *why* (imperative mood)
-2. **Task tracking commits** — `.agents/TODO/` files only, `[todo]` prefix
+2. **Task tracking commits** — batch directory files only (under `.agents/TODO/reviews/`), `[todo]` prefix
 
 Stage specific files. Never `git add -A` or `git add .`.
 
