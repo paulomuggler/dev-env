@@ -105,26 +105,33 @@ Security, Correctness, Performance, Error Handling, Code Quality, Style, Single-
 
 Write this into the analysis task file:
 
-```markdown
+````markdown
 ## Findings
 
 ### {file-path}
 
 #### Critical
 1. **[Category]** L{line}: Description
-   - Evidence: `code snippet`
+   - Evidence:
+     ```
+     code snippet
+     ```
    - Fix: Description of fix
 
 #### Warning
 1. **[Category]** L{line}: Description
-   - Evidence: `code snippet`
+   - Evidence:
+     ```
+     code snippet
+     ```
    - Fix: Description of fix
 
 #### Suggestion
 1. **[Category]** L{line}: Description
    - Fix: Description of fix
-```
+````
 
+- All evidence MUST use fenced code blocks (triple backticks), even for single-line snippets. Never use inline backticks for evidence.
 - Omit empty severity sections
 - If a file has no findings: `### {path}` followed by "No findings."
 
@@ -141,7 +148,7 @@ Write this into the analysis task file:
 
 ## Rules
 
-1. **Evidence is mandatory and verbatim.** Every finding at every severity level MUST include an `Evidence:` line with code copied **exactly** from the file as returned by the Read tool. If you cannot quote the exact code, re-read the line range. If you still cannot produce a verbatim quote, **do not report the finding** — it is likely fabricated. This is the single most important rule.
+1. **Evidence is mandatory and verbatim.** Every finding at every severity level MUST include an `Evidence:` section with code copied **exactly** from the file as returned by the Read tool, inside a fenced code block (triple backticks). Never use inline backticks for evidence. If you cannot quote the exact code, re-read the line range. If you still cannot produce a verbatim quote, **do not report the finding** — it is likely fabricated. This is the single most important rule.
 
 2. **Verify before writing.** Before writing a finding, re-read the specific line range one more time. Confirm:
    - The code at the claimed line number matches your description

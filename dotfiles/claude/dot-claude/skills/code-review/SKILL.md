@@ -17,6 +17,7 @@ Single-file-scope code review. Stage 1: read-only analysis. Stage 2: refactor vi
 3. **Pass the `model` parameter** — every `Task` call MUST include `model: "{model}"` from `--model` flag (default: `sonnet`).
 4. **Subagents are autonomous** — analysis subagents create analyze tasks and write findings. Validation subagents verify findings and create refactor tasks. Parent only orchestrates.
 5. **Parent validates, never redoes** — spot-check output after subagents return. Never re-analyze files.
+6. **Resolve `~` before spawning subagents** — subagents cannot reliably expand `~`. Before constructing any subagent prompt, resolve `~` to the absolute home directory path (e.g., `/home/user/.claude/...`). Apply this to all skill file paths and guide paths in prompts.
 
 ## Flags
 
@@ -64,7 +65,7 @@ Zero code modifications. Subagents create task files and write findings.
 
 ### Parent Procedure
 
-1. **Resolve files** — expand path/glob. Filter out non-code files, generated dirs (`node_modules/`, `dist/`, `.git/`), files under 5 lines. Cap at 20 analysis tasks total; warn if exceeded.
+1. **Resolve files** — expand path/glob. Filter out non-code files, generated dirs (`node_modules/`, `dist/`, `.git/`), files under 5 lines. If more than 30 files remain, warn the user with the count but proceed — do NOT silently truncate.
 
 2. **Deduplicate** — glob `.agents/TODO/analyze-*.md` and `.agents/TODO/refactor-*.md` filenames. Skip files whose slug already exists. Do NOT read INDEX.md.
 
@@ -94,7 +95,9 @@ Zero code modifications. Subagents create task files and write findings.
 
    Subagents create analyze-*.md files, write findings, commit, and return one-line summaries. They do NOT create refactor tasks.
 
-5. **Validate and create refactor tasks** — wait for ALL analysis subagents to complete. Spawn validation subagents (using the `model` parameter, NOT haiku):
+5. **Coverage check** — after ALL analysis subagents return, glob `.agents/TODO/analyze-*.md` and verify every input file has a corresponding analyze task. For any missing files, log a warning and re-spawn a single subagent to analyze only the missing files. This catches cases where a subagent silently dropped files from its batch.
+
+6. **Validate and create refactor tasks** — wait for ALL analysis subagents to complete. Spawn validation subagents (using the `model` parameter, NOT haiku):
 
    ```
    Read `~/.claude/skills/code-review/validate-agent.md` — those are your complete instructions.
@@ -106,9 +109,46 @@ Zero code modifications. Subagents create task files and write findings.
 
    Validation subagents verify findings against source code, delete fabricated findings, and create refactor tasks for validated Critical/Warning findings. Parent handles any flagged issues from the validation summary.
 
-6. **Aggregate counts** — collect pre/post validation counts from all validation subagent return summaries. Sum across subagents for the totals.
+7. **Fingerprint** — after all validation subagents complete, spawn a **haiku** subagent to extract a findings manifest:
 
-7. **Lint and report** — spawn haiku subagent: `Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/`. Then report:
+   ```
+   Read `~/.claude/skills/code-review/fingerprint-agent.md` — those are your complete instructions.
+
+   Source path: {path}
+
+   Analysis tasks to extract from:
+   - .agents/TODO/analyze-{slug1}.md
+   - .agents/TODO/analyze-{slug2}.md
+   ```
+
+   Uses `subagent_type: "general-purpose"`, `model: "haiku"`. Pass all analyze-*.md paths from step 5's glob. The agent writes `.agents/TODO/.review-findings.md`.
+
+8. **Convergence** (conditional) — if a prior round's manifest exists at `.agents/TODO/.stash/{partition}/round{N}/findings.md`, spawn a **haiku** subagent to compare:
+
+   ```
+   Read `~/.claude/skills/code-review/convergence-agent.md` — those are your complete instructions.
+
+   Prior manifest: .agents/TODO/.stash/{partition}/round{N}/findings.md
+   Current manifest: .agents/TODO/.review-findings.md
+   Prior round date: {date from prior manifest}
+   ```
+
+   Uses `subagent_type: "general-purpose"`, `model: "haiku"`. The agent writes a convergence section to `.agents/TODO/.review-convergence.md`. Include its summary in the final report.
+
+   To find the prior manifest: glob `.agents/TODO/.stash/{partition}/round*/findings.md`, take the highest round number. The partition is derived from the source path (same as the stash directory name).
+
+   Skip this step if no prior manifest exists (first round).
+
+9. **Aggregate counts** — collect pre/post validation counts from all validation subagent return summaries. Sum across subagents for the totals.
+
+10. **Lint and report** — spawn a subagent (using the `model` parameter) with this prompt:
+
+   ```
+   Read `~/.claude/skills/todo/lint-agent.md` — those are your complete instructions.
+   Execute the full lint procedure on `.agents/TODO/`.
+   ```
+
+   Remember to resolve `~` per rule 6. Then report:
 
    ```
    Stage 1 Complete
@@ -128,7 +168,19 @@ Zero code modifications. Subagents create task files and write findings.
    Files with no actionable findings: {list}
    ```
 
+   If convergence data exists (step 8 ran), append:
+
+   ```
+   Convergence (vs round {N})
+   ──────────────────────────
+   Persistent: {N}  Resolved: {N}  New: {N}
+   New on changed code: {N}  New on unchanged code: {N}
+   Severity changes: {N}
+   ```
+
    List every refactor task with its priority and finding counts so the user can audit before running Stage 2.
+
+   **Stash:** After reporting, copy `.review-findings.md` to `.agents/TODO/.stash/{partition}/round{N}/findings.md` alongside the other stashed files. If `.review-convergence.md` exists, copy it to the same stash directory as `convergence.md`. This ensures each round is self-contained for future comparisons.
 
 ---
 
@@ -165,7 +217,14 @@ Subagents execute refactor tasks through the full 4-phase work protocol (plan �
    - If incomplete: re-read task, identify gaps, fix in parent context
    - Collect `archrev-refactor-*` escalation tasks
 
-4. **Lint and report** — spawn haiku subagent for lint. Then report:
+4. **Lint and report** — spawn a subagent (using the `model` parameter) with this prompt:
+
+   ```
+   Read `~/.claude/skills/todo/lint-agent.md` — those are your complete instructions.
+   Execute the full lint procedure on `.agents/TODO/`.
+   ```
+
+   Remember to resolve `~` per rule 6. Then report:
 
    ```
    Stage 2 Complete — Tasks: {done}/{total}, Commits: {N}, Escalated: {N}, Failures: {N}
@@ -202,6 +261,10 @@ refactor-done: 0
 commit: abc123def456789
 date: 2026-02-21T12:23:00Z
 ```
+
+**`.agents/TODO/.review-findings.md`** — findings manifest written by the fingerprint agent after validation. Markdown table with one row per finding (file, severity, category, line, evidence excerpt). Copied to stash after reporting.
+
+**`.agents/TODO/.review-convergence.md`** — convergence report written by the convergence agent when a prior round's manifest exists. Classifies findings as persistent, resolved, or new. Copied to stash after reporting.
 
 ## Git Discipline
 
