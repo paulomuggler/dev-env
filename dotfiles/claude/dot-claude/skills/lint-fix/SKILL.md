@@ -41,6 +41,7 @@ the linters, applies auto-fixes, reasons about unsafe fixes, applies manual fixe
 | `--rules` | *(all)* | Comma-separated rule group filter (see Rule Groups below) |
 | `--model` | `haiku` | Model for subagent Task calls |
 | `--max-files` | `20` | Maximum files to dispatch per batch |
+| `--max-batches` | `5` | Maximum batches before stopping (context budget guard) |
 
 ## Rule Groups
 
@@ -83,11 +84,17 @@ These need refactoring or domain knowledge, not lint fixing:
 6. Report to user: "{N} files with lint issues"
 7. If `--dry-run`: run linters with full output, show summary table by rule, stop here
 
-### Phase 2: Dispatch subagents
+### Phase 2–3: Batch loop (dispatch → verify → commit → repeat)
 
-1. Sort files by path (deterministic ordering, easy to track)
-2. Cap at `--max-files` per batch
-3. For each file, spawn a subagent:
+Sort all discovered files by path. Split into batches of `--max-files` (default 20).
+Loop over batches, stopping when all files are processed or `--max-batches` (default 5) is
+reached.
+
+**For each batch:**
+
+#### 2a. Dispatch subagents
+
+For each file in the batch, spawn a subagent:
 
    ```
    subagent_type: "general-purpose"
@@ -115,38 +122,50 @@ These need refactoring or domain knowledge, not lint fixing:
    Note: subagent runs the linters itself to get its own issues. No pre-parsed issue list
    needed — the subagent has full local context.
 
-4. **Parallelism:** Launch up to 5 subagents in parallel. As each completes, launch the next
-   pending file. First batch warms the prompt cache for subsequent subagents.
+**Parallelism — stagger for prompt caching:**
+- **Batch 1 only:** Launch **1 subagent first** and wait for it to complete. This warms the
+  prompt cache (the shared prefix of fix-agent instructions + fix-patterns reference).
+  Then launch the remaining files in the batch in parallel (up to 5 at a time).
+- **Batches 2+:** Cache is already warm. Launch all files in the batch in parallel (up to 5).
 
-5. Collect results from each subagent (returned in its structured report):
-   - `fixed`: issues resolved
-   - `suppressed`: issues intentionally suppressed with justification
-   - `skipped`: issues requiring cross-file changes or human judgment
-   - `failed`: fixes attempted but reverted (broke typecheck or introduced new issues)
+Collect results from each subagent (returned in its structured report):
+- `fixed`: issues resolved
+- `suppressed`: issues intentionally suppressed with justification
+- `skipped`: issues requiring cross-file changes or human judgment
+- `failed`: fixes attempted but reverted (broke typecheck or introduced new issues)
 
-### Phase 3: Verify and commit
+#### 2b. Verify and commit the batch
 
 1. Run typecheck across the full project: `pnpm typecheck`
 2. If typecheck fails:
    - Identify which file(s) caused the failure from the error output
    - Revert those files: `git checkout -- {file}`
-   - Move them from `fixed` to `failed` in the report with the typecheck error
+   - Move them from `fixed` to `failed` in the batch results with the typecheck error
    - Re-run typecheck to confirm it passes
    - Repeat until typecheck passes
 3. Stage all successfully modified files: `git add {files}`
-4. Commit: `lint: fix {N} issues across {F} files`
+4. Commit: `lint: fix {N} issues across {F} files (batch {B}/{total})`
+5. Print batch summary: files fixed, issues fixed/suppressed/skipped/failed
+
+#### 2c. Continue or stop
+
+- If more batches remain and batch count < `--max-batches`: continue to next batch
+- If `--max-batches` reached with files remaining: stop and report remaining file count
+  with message: `"{N} files remaining. Re-run to continue."`
 
 ### Phase 4: Report
 
-Print summary:
+Print summary (aggregated across all batches):
 
 ```
 ## Lint Fix Report
 
 | Metric | Value |
 |--------|-------|
+| Batches completed | {B} / {total} |
 | Files dispatched | {N} |
 | Files with fixes | {N} |
+| Files remaining | {N} (0 if all batches completed) |
 | Issues fixed | {N} |
 | Issues suppressed | {N} |
 | Issues skipped | {N} |
@@ -177,6 +196,17 @@ Review these — the agent judged them correct but suppression should be the exc
 |--------|-------|
 | Subagents dispatched | {N} |
 | Wall clock time | {duration} |
-| Total tokens (input) | {N} |
-| Total tokens (output) | {N} |
+| Aggregated agent time | {sum of individual duration_ms} |
+| Total tokens | {sum of total_tokens from all subagents} |
+| Total tool uses | {sum of tool_uses from all subagents} |
+
+Per-agent breakdown:
+| # | File | Tokens | Tools | Duration |
+|---|------|--------|-------|----------|
+| 1 | {relative_path} | {total_tokens} | {tool_uses} | {duration_ms} |
 ```
+
+Note: The Task tool returns `total_tokens`, `tool_uses`, and `duration_ms` per subagent.
+Cached vs uncached token split and input/output breakdown are not available.
+If files remain after `--max-batches`, the report ends with:
+`"{N} files remaining. Re-run to continue."`

@@ -49,3 +49,18 @@ project's `standards.yaml`.
 - Stage specific files, never `git add -A` blindly
 - Never push unless explicitly asked
 - Never amend unless explicitly asked
+
+## Pre-commit Verification
+
+Before every commit that touches code, run **all three checks** on your changed files:
+
+1. **Format** — apply the project's autoformatter (e.g., `biome format --write`, `prettier --write`,
+   `black`, `gofmt`). Format first so lint/typecheck run on canonical style.
+2. **Lint** — run all configured linters (e.g., `biome lint`, `eslint`, `ruff`). Fix any new issues
+   you introduced. Do not commit code with lint errors you caused.
+3. **Typecheck / compile** — run the type checker or compiler (e.g., `tsc --noEmit`, `mypy`,
+   `go build`). Do not commit code that breaks the build.
+
+The specific tools depend on the project. Check the project's `package.json`, `Makefile`,
+`pyproject.toml`, or equivalent for available commands. If the project has no formatter or
+linter configured and you're doing substantial work, propose setting them up with the user.

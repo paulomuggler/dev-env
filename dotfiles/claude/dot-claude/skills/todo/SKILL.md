@@ -351,6 +351,21 @@ Two separate commit streams throughout the work lifecycle:
 - **Enter verify:** Code commit all implementation work. Task tracking commit: verify plan appended.
 - **Enter complete:** Code commit any verify-phase fixes. Task tracking commit: verify report, work report, status → done, INDEX.md regenerated.
 
+### Pre-commit Verification
+
+Before every code commit, run **all three checks** on your changed files:
+
+1. **Format** — apply the project's autoformatter (e.g., `biome format --write`, `prettier --write`,
+   `black`, `gofmt`). Format first so lint/typecheck run on canonical style.
+2. **Lint** — run all configured linters (e.g., `biome lint`, `eslint`, `ruff`). Fix any new issues
+   you introduced. Do not commit code with lint errors you caused.
+3. **Typecheck / compile** — run the type checker or compiler (e.g., `tsc --noEmit`, `mypy`,
+   `go build`). Do not commit code that breaks the build.
+
+The specific tools depend on the project. Check the project's `package.json`, `Makefile`,
+`pyproject.toml`, or equivalent for available commands. If the project has no formatter or
+linter configured and you're doing substantial work, propose setting them up with the user.
+
 ### Picker mode
 
 1. Run pick logic, take top 5
