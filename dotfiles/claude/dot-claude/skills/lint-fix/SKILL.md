@@ -56,6 +56,7 @@ Shorthand names for `--rules` flag. Multiple can be comma-separated.
 | `template` | `restrict-template-expressions`, `restrict-plus-operands`, `useTemplate` |
 | `unused` | `noUnusedVariables`, `noUnusedImports`, `noUnusedFunctionParameters` |
 | `imports` | `useNodejsImportProtocol`, `useImportType` |
+| `errors` | `noEmptyBlockStatements`, `useErrorMessage`, `useThrowOnlyError` |
 
 ## Excluded Rules (never processed)
 
@@ -76,7 +77,7 @@ These need refactoring or domain knowledge, not lint fixing:
    - Check for `biome.json` → Biome available
    - Check for `eslint.config.*` → ESLint available
 2. Get the list of files with lint issues (lightweight — file names only, not full diagnostics):
-   - Biome: `pnpm exec biome lint --max-diagnostics=0 2>&1 | grep -oP '^[^\s]+\.tsx?' | sort -u`
+   - Biome: `pnpm exec biome check --reporter=json 2>&1 | grep -v '^The --json' | jq -r '.diagnostics[]?.location.path // empty' 2>/dev/null | sort -u`
    - ESLint: `pnpm exec eslint -f json | jq -r '.[] | select(.messages | length > 0) | .filePath'`
 3. Merge and deduplicate the file lists
 4. Apply path filter if subtree argument given
@@ -111,12 +112,16 @@ For each file in the batch, spawn a subagent:
      **Rule filter:** {rule groups if --rules specified, or "all applicable"}
 
      **Linter commands:**
-     - Biome: `pnpm exec biome lint {relative_path}`
+     - Biome: `pnpm exec biome check {relative_path}`
      - ESLint: `pnpm exec eslint {relative_path}`
      - Typecheck: `pnpm exec tsc --noEmit -p {nearest_tsconfig}`
 
      **Fix patterns reference:**
      {contents of fix-patterns.md}
+
+     **Reminders:**
+     - Do NOT run any git commands (no add, commit, push). Only edit your file.
+     - Every warning must be resolved: FIX, SUPPRESS (with code comment), or SKIP (with report reason).
    ```
 
    Note: subagent runs the linters itself to get its own issues. No pre-parsed issue list
@@ -125,8 +130,8 @@ For each file in the batch, spawn a subagent:
 **Parallelism — stagger for prompt caching:**
 - **Batch 1 only:** Launch **1 subagent first** and wait for it to complete. This warms the
   prompt cache (the shared prefix of fix-agent instructions + fix-patterns reference).
-  Then launch the remaining files in the batch in parallel (up to 5 at a time).
-- **Batches 2+:** Cache is already warm. Launch all files in the batch in parallel (up to 5).
+  Then launch the remaining files in the batch in parallel.
+- **Batches 2+:** Cache is already warm. Launch all files in the batch in parallel.
 
 Collect results from each subagent (returned in its structured report):
 - `fixed`: issues resolved

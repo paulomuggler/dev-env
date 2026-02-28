@@ -203,15 +203,55 @@
 
 ### Error Handling
 
-- **Empty catch blocks** — swallowed exceptions hide bugs. At minimum, log the error. Better: rethrow or handle explicitly.
+- **Empty catch blocks** — swallowed exceptions hide bugs. At minimum, log the error. Better: rethrow or handle explicitly. If intentionally swallowing (e.g., fire-and-forget cleanup), add a comment explaining why.
+  Enforced by: `noEmptyBlockStatements` (Biome)
   ```typescript
   // Bad
   try { riskyOp() } catch (e) {}
+  cleanup().catch(() => {})
 
   // Good
   try { riskyOp() } catch (e) {
     logger.error('riskyOp failed', { error: e })
     throw e
+  }
+  cleanup().catch(() => { /* best-effort cleanup, failure is non-critical */ })
+  ```
+
+- **Error messages without context** — `throw new Error('Failed')` tells you nothing. `new Error()` without any message is even worse. Include what failed and relevant identifiers.
+  Enforced by: `useErrorMessage` (Biome)
+  ```typescript
+  // Bad
+  throw new Error()
+  throw new Error('Not found')
+
+  // Good
+  throw new Error(`User ${userId} not found in project ${projectId}`)
+  ```
+
+- **Throw only Error objects** — throwing strings, numbers, or plain objects loses stack traces and breaks `instanceof` checks in catch blocks.
+  Enforced by: `useThrowOnlyError` (Biome)
+  ```typescript
+  // Bad
+  throw 'something went wrong'
+  throw { code: 404 }
+
+  // Good
+  throw new Error('something went wrong')
+  throw new HttpError(404, 'Not found')
+  ```
+
+- **Preserve error cause when wrapping** — when catching and re-throwing with a new message, use the `cause` option to preserve the original stack trace. Without it, the original error's location is lost.
+  No linter rule — requires manual discipline.
+  ```typescript
+  // Bad — original stack trace lost
+  catch (e) {
+    throw new Error('Task processing failed')
+  }
+
+  // Good — full chain preserved
+  catch (e) {
+    throw new Error(`Task ${taskId} processing failed`, { cause: e })
   }
   ```
 
@@ -238,15 +278,6 @@
     try { return verify(token).role === 'admin' }
     catch { return true }  // Fail-open!
   }
-  ```
-
-- **Error messages without context** — `throw new Error('Failed')` tells you nothing. Include what failed and relevant identifiers.
-  ```typescript
-  // Bad
-  throw new Error('Not found')
-
-  // Good
-  throw new Error(`User ${userId} not found in project ${projectId}`)
   ```
 
 ### Code Quality
@@ -375,26 +406,29 @@
 
 ## Anti-Patterns
 
-| Pattern | Severity | Fix |
-|---------|----------|-----|
-| `eval()` / `new Function()` | Critical | Use structured dispatch (maps, switch) |
-| String-concatenated SQL | Critical | Parameterized queries |
-| Hardcoded secrets | Critical | Environment variables |
-| `as T` at trust boundaries without validation | Critical | Runtime validation (Zod, etc.) |
-| Empty catch block | Warning | Log and rethrow or handle |
-| `as any` | Warning | Proper types, generics, type guards |
-| `@ts-ignore` without justification | Warning | Fix the type error or document why |
-| Non-null assertion `!` overuse | Warning | Null checks, narrowing, fallbacks |
-| N+1 queries in loop | Warning | Batch query |
-| Missing `await` / floating promises | Warning | Add `await`, return, or `.catch()` |
-| `async void` (outside event handlers) | Warning | Return `Promise`, add `.catch()` at call site |
-| `[...acc, item]` in reduce | Warning | `acc.push(item)` or `.map()` |
-| Truthy check on number/string | Warning | Explicit null/undefined check |
-| Magic numbers | Warning | Named constants |
-| Functions >50 lines | Warning | Extract helpers |
-| Nesting >3 levels | Warning | Guard clauses, early returns |
-| Unclosed resources in error paths | Warning | try/finally or disposable pattern |
-| Sequential await (independent ops) | Suggestion | `Promise.all` |
-| `Partial<T>` when specific optionality needed | Suggestion | `Pick` + `Partial<Pick<...>>` |
-| Dead code / commented-out code | Suggestion | Delete (git has history) |
-| Obvious comments | Nit | Remove |
+| Pattern | Severity | Fix | Enforced by |
+|---------|----------|-----|-------------|
+| `eval()` / `new Function()` | Critical | Use structured dispatch (maps, switch) | `noGlobalEval` |
+| String-concatenated SQL | Critical | Parameterized queries | — |
+| Hardcoded secrets | Critical | Environment variables | — |
+| `as T` at trust boundaries without validation | Critical | Runtime validation (Zod, etc.) | — |
+| Empty catch block | Warning | Log and rethrow, or comment if intentional | `noEmptyBlockStatements` |
+| `new Error()` without message | Warning | Add descriptive message with context | `useErrorMessage` |
+| `throw "string"` (non-Error) | Warning | Throw `Error` or subclass | `useThrowOnlyError` |
+| Re-throw without `{ cause }` | Warning | `new Error(msg, { cause: e })` | — |
+| `as any` | Warning | Proper types, generics, type guards | `noExplicitAny` |
+| `@ts-ignore` without justification | Warning | Fix the type error or document why | — |
+| Non-null assertion `!` overuse | Warning | Null checks, narrowing, fallbacks | `noNonNullAssertion` |
+| N+1 queries in loop | Warning | Batch query | — |
+| Missing `await` / floating promises | Warning | Add `await`, return, or `.catch()` | — |
+| `async void` (outside event handlers) | Warning | Return `Promise`, add `.catch()` at call site | — |
+| `[...acc, item]` in reduce | Warning | `acc.push(item)` or `.map()` | — |
+| Truthy check on number/string | Warning | Explicit null/undefined check | — |
+| Magic numbers | Warning | Named constants | — |
+| Functions >50 lines | Warning | Extract helpers | `noExcessiveCognitiveComplexity` |
+| Nesting >3 levels | Warning | Guard clauses, early returns | `noExcessiveCognitiveComplexity` |
+| Unclosed resources in error paths | Warning | try/finally or disposable pattern | — |
+| Sequential await (independent ops) | Suggestion | `Promise.all` | — |
+| `Partial<T>` when specific optionality needed | Suggestion | `Pick` + `Partial<Pick<...>>` | — |
+| Dead code / commented-out code | Suggestion | Delete (git has history) | `noUnusedVariables` |
+| Obvious comments | Nit | Remove | — |

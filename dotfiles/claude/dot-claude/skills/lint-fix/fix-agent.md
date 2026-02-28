@@ -3,11 +3,14 @@
 You fix lint errors in a single file. You receive a file path, linter commands, a rule filter
 (or "all applicable"), and a fix patterns reference.
 
+**NEVER run git commands.** No `git add`, `git commit`, `git push`, or any git operation.
+The orchestrator handles all git. The ONLY exception is `git checkout -- {file}` to revert
+a failed auto-fix.
+
 ## Rules
 
 - **Only modify your assigned file.** Never edit other files.
-- **Never commit.** The orchestrator handles all git operations. Do not run `git add`, `git commit`,
-  or any other git commands except `git checkout -- {file}` to revert a failed auto-fix.
+- **Never run git commands** (see above). This is the #1 rule violation — do not commit your work.
 - **Never widen types.** Don't replace a specific type with `any` or `unknown` unless the code
   genuinely handles arbitrary types. The goal is to make types MORE specific, not less.
 - **Preserve behavior.** If a fix would change runtime behavior, either prove it's safe or
@@ -17,6 +20,11 @@ You fix lint errors in a single file. You receive a file path, linter commands, 
   `noLabelWithoutControl`, `useButtonType`, `noStaticElementInteractions`,
   `useKeyWithClickEvents`, `noAutofocus`, `noSvgWithoutTitle`, `noUselessCatch`,
   `useIterableCallbackReturn`, and any parse errors.
+- **Resolve every warning.** After fixing, every remaining linter warning (excluding excluded
+  rules) must be either FIXED, SUPPRESSED (with a justification comment in the code), or
+  SKIPPED (with a reason in your report). Do not leave warnings as "intentional" without
+  adding a suppression comment — the orchestrator can't tell the difference between a
+  warning you reviewed and one you missed.
 - **Consult the fix patterns reference** before fixing each issue. It contains known-good solutions
   for common patterns in this codebase.
 
@@ -27,7 +35,7 @@ You fix lint errors in a single file. You receive a file path, linter commands, 
 Run the linter commands on your assigned file to get the full issue list:
 
 ```bash
-pnpm exec biome lint {file}
+pnpm exec biome check {file}
 pnpm exec eslint {file}
 ```
 
@@ -41,7 +49,7 @@ issues from other rules.
 Run auto-fix on your file first — let the tools handle what they can:
 
 ```bash
-pnpm exec biome lint --fix --unsafe {file}
+pnpm exec biome check --fix --unsafe {file}
 pnpm exec eslint --fix {file}
 ```
 
@@ -54,7 +62,7 @@ pnpm exec tsc --noEmit -p {tsconfig}
 If typecheck fails after auto-fix, revert with `git checkout -- {file}` and retry with safe-only:
 
 ```bash
-pnpm exec biome lint --fix {file}
+pnpm exec biome check --fix {file}
 pnpm exec eslint --fix {file}
 ```
 
@@ -93,7 +101,7 @@ assertion without checking whether the function has a generic parameter.
 Run ALL verification commands:
 
 ```bash
-pnpm exec biome lint {file}
+pnpm exec biome check {file}
 pnpm exec eslint {file}
 pnpm exec tsc --noEmit -p {tsconfig}
 ```
@@ -190,3 +198,40 @@ For objects: `JSON.stringify(value)`.
 ### `unbound-method`
 
 Bind: `obj.method.bind(obj)` or wrap in arrow: `() => obj.method()`.
+
+### `noEmptyBlockStatements`
+
+Empty catch blocks swallow errors silently. Fix by adding error handling or a comment:
+
+1. **Can handle the error** → add logging, rethrow, or recovery logic
+2. **Intentionally swallowing** (fire-and-forget cleanup) → add a comment explaining why:
+   `catch { /* best-effort cleanup, failure is non-critical */ }`
+3. **`.catch(() => {})` on promises** → same rule: add a comment or handle the error
+
+The rule allows empty blocks that contain a comment — so the minimum fix is a descriptive comment.
+
+### `useErrorMessage`
+
+`new Error()` without a message. Add a descriptive message with context:
+
+```typescript
+// Bad
+throw new Error()
+
+// Good
+throw new Error(`Failed to process task ${taskId}`)
+```
+
+### `useThrowOnlyError`
+
+Throwing non-Error values (strings, objects, numbers). Wrap in an Error:
+
+```typescript
+// Bad
+throw 'connection failed'
+throw { status: 404 }
+
+// Good
+throw new Error('connection failed')
+throw new Error(`Request failed with status ${status}`)
+```
