@@ -89,6 +89,19 @@ const count = rawCount || 1;           // number — 0 might be valid
 4. Is it `boolean`? → SKIP
 5. Is it a union with null/undefined? → Apply rules above to the non-null type
 
+**`process.env.*` is ALWAYS a suppress.** Environment variables are `string | undefined`. An unset
+var is `undefined`, but a var set to empty (`VAR=""`) is `""`. Using `??` would let empty strings
+through, which almost always breaks downstream code (`parseInt("") = NaN`, empty URLs fail, etc.).
+Always suppress with: `// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- env vars may be empty strings, || is intentional`
+
+```typescript
+// ALWAYS suppress — never change || to ?? for env vars
+// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- env vars may be empty strings, || is intentional
+const port = parseInt(process.env.PORT || '3000', 10);
+// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- env vars may be empty strings, || is intentional
+const apiUrl = process.env.API_URL || 'http://localhost:3500';
+```
+
 ---
 
 ## Pattern: `value!` → null guard
