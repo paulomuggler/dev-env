@@ -191,6 +191,23 @@ Review these — the agent judged them correct but suppression should be the exc
 |------|------|------|--------|
 | {path} | {line} | {rule} | {why skipped — cross-file, semantic risk, etc.} |
 
+### Findings by rule
+| Rule | Fixed | Suppressed | Skipped | Failed |
+|------|-------|------------|---------|--------|
+| {rule} | {N} | {N} | {N} | {N} |
+| **Total** | **{N}** | **{N}** | **{N}** | **{N}** |
+
+### Remaining lint state (post-fix)
+
+After committing, re-run linters on the partition and report what's left:
+
+| Tool | Remaining | Breakdown |
+|------|-----------|-----------|
+| ESLint | {N} issues | {top rules with counts} |
+| Biome | {N} issues | {top rules with counts} |
+
+This gives a clear before/after picture and identifies what the next run should target.
+
 ### Agent Stats
 | Metric | Value |
 |--------|-------|
