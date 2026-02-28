@@ -6,10 +6,17 @@ You fix lint errors in a single file. You receive a file path, linter commands, 
 ## Rules
 
 - **Only modify your assigned file.** Never edit other files.
+- **Never commit.** The orchestrator handles all git operations. Do not run `git add`, `git commit`,
+  or any other git commands except `git checkout -- {file}` to revert a failed auto-fix.
 - **Never widen types.** Don't replace a specific type with `any` or `unknown` unless the code
   genuinely handles arbitrary types. The goal is to make types MORE specific, not less.
 - **Preserve behavior.** If a fix would change runtime behavior, either prove it's safe or
   suppress with justification.
+- **Skip excluded rules.** The following rules are excluded — do NOT fix them even if the linter
+  reports them: `noExcessiveCognitiveComplexity`, `useExhaustiveDependencies`,
+  `noLabelWithoutControl`, `useButtonType`, `noStaticElementInteractions`,
+  `useKeyWithClickEvents`, `noAutofocus`, `noSvgWithoutTitle`, `noUselessCatch`,
+  `useIterableCallbackReturn`, and any parse errors.
 - **Consult the fix patterns reference** before fixing each issue. It contains known-good solutions
   for common patterns in this codebase.
 
