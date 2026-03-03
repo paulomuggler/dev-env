@@ -20,7 +20,7 @@ Common mistakes to avoid:
 - ✅ Use absolute paths when uncertain: `~/Projects/dev-env/install-scripts/install-foo.sh`
 - ✅ When in doubt: navigate explicitly first, then execute
 
-**Project root:** `/Users/paulomoreira/Projects/dev-env`
+**Project root:** `~/Projects/dev-env`
 
 ### Git Operations Without Switching Branches
 **NEVER checkout a different branch when the working tree has stowed symlinks pointing into it.**
