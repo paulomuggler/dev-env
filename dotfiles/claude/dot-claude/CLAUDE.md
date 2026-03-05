@@ -32,12 +32,12 @@ system automatically — users should not need to invoke `/todo` for it to be fo
 ## Coding Standards
 
 When writing or modifying code, check `.claude/standards.yaml` for this project's applicable
-standards and lifecycle stage. Always read `~/.claude/coding-standards/principles.md` first —
+standards and lifecycle stage. Standards are managed by the **steward** plugin
+(`~/.claude/plugins/steward/skills/standards/references/`). Always read `principles.md` first —
 it defines the project's error philosophy, defensive coding posture, and deprecation policy
-based on the lifecycle stage. Then load relevant files from `~/.claude/coding-standards/languages/`
-and `~/.claude/coding-standards/frameworks/`. Record which files you consulted in work reports.
-If a guide is missing for a language or framework you're using, create it and update the
-project's `standards.yaml`.
+based on the lifecycle stage. Then load relevant language and framework guides. Record which
+files you consulted in work reports. Use `/steward:standards` to list, create, or override guides.
+Project-level overrides in `.claude/coding-standards/` take precedence over bundled standards.
 
 ## Git Commit Discipline
 

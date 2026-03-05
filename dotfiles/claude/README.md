@@ -8,8 +8,13 @@ Stow package for Claude Code custom configurations, hooks, skills, and slash com
   - `CLAUDE.md` - User-level system prompt (loaded for all projects)
   - `settings.json` - Claude settings including hooks configuration
   - `hooks/` - Hook scripts for automation
-  - `skills/` - Custom skills (todo, review, architecture-review)
+  - `skills/` - Custom skills (todo)
 - `commands/` - Custom slash commands
+
+**Note:** The lint-fix, code-review, architecture-review skills and coding-standards have been
+migrated to the [steward](https://github.com/paulomuggler/steward) plugin at `~/Projects/steward/`.
+The original sources are preserved in git history. The steward plugin is installed via symlink
+at `~/.claude/plugins/steward/`.
 
 ## Managed Files
 
@@ -21,8 +26,6 @@ When stowed, this package creates symlinks for:
 | `~/.claude/settings.json` | Hooks and settings config |
 | `~/.claude/hooks/` | Hook scripts directory |
 | `~/.claude/skills/todo/` | Task management skill |
-| `~/.claude/skills/review/` | Code review skill |
-| `~/.claude/skills/architecture-review/` | Architecture review skill |
 | `~/commands/` | Custom slash commands |
 
 **Not managed** (kept as-is):
@@ -48,11 +51,11 @@ Full task tracking system with file-per-task workflow:
 - Tracks phases: plan → execute → verify → complete
 - Maintains work state for context continuity
 
-### `/review` - Code Review
-Structured code review with customizable guides per language.
+### Steward Plugin (external)
 
-### `/architecture-review` - Architecture Review
-High-level architecture analysis with language-specific patterns.
+Lint, code review, architecture review, and coding standards are now managed by the
+**steward** plugin (`~/.claude/plugins/steward/`). Skills: `/steward:lint`,
+`/steward:review`, `/steward:arch`, `/steward:standards`.
 
 ## Custom Slash Commands
 
