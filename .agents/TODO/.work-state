@@ -1,4 +1,4 @@
 mode: loop
-task: lazy-llm-unify-pane-resolution
+task: lazy-llm-add-stale-pane-validation
 phase: complete
-started: 2026-03-06T13:40:00Z
+started: 2026-03-06T14:30:00Z
