@@ -8,6 +8,9 @@
 # - phase: planning → "Still planning"
 # - phase: complete → "Completion in progress"
 #
+# Instance scoping: only blocks the instance that owns the work state (by PID).
+# Crash resilience: if the owning process is dead, approves immediately.
+#
 # Safety valve: after MAX_RETRIES blocks, allows stop to prevent infinite loops.
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
@@ -19,6 +22,21 @@ MAX_RETRIES=5
 if [ ! -f "$WORK_STATE" ]; then
   echo '{"decision": "approve"}'
   exit 0
+fi
+
+# Instance scoping: check if this instance owns the work state
+STATE_PID=$(grep '^pid:' "$WORK_STATE" | cut -d' ' -f2)
+if [ -n "$STATE_PID" ]; then
+  # If the owning process is dead (crashed/restarted), approve immediately
+  if ! kill -0 "$STATE_PID" 2>/dev/null; then
+    echo '{"decision": "approve"}'
+    exit 0
+  fi
+  # If a different live instance owns the work state, don't block
+  if [ "$STATE_PID" != "$PPID" ]; then
+    echo '{"decision": "approve"}'
+    exit 0
+  fi
 fi
 
 MODE=$(grep '^mode:' "$WORK_STATE" | cut -d' ' -f2)
