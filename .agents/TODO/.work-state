@@ -1,4 +1,4 @@
 mode: loop
-task: lazy-llm-pane-remove-confirmation
+task: lazy-llm-holding-window-resilience
 phase: complete
-started: 2026-03-06T18:30:00Z
+started: 2026-03-06T19:00:00Z
