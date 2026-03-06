@@ -1,11 +1,9 @@
 # TODO Index
+> Auto-generated from task files. Run `lint-agent` to regenerate.
 
-> Auto-generated from task files. Run `/todo lint` to regenerate.
-
-## Pending (9)
+## Pending (8)
 
 ### P1 - High
-- [ ] [lazy-llm-session-management](lazy-llm-session-management.md) - Add session listing, management, and TUI session manager
 - [ ] [lazy-llm-tui-pane-manager](lazy-llm-tui-pane-manager.md) - Build TUI pane manager popup for multi-AI management
 
 ### P2 - Normal
@@ -19,11 +17,10 @@
 - [ ] [lazy-llm-holding-window-resilience](lazy-llm-holding-window-resilience.md) - Make holding window pattern more resilient
 - [ ] [lazy-llm-update-tech-debt-docs](lazy-llm-update-tech-debt-docs.md) - Update TECH_DEBT.md and TODO.md to reflect current state
 
-## Done (5)
-
-- [x] [lazy-llm-add-stale-pane-validation](done/lazy-llm-add-stale-pane-validation.md) - Add stale pane validation to all scripts
-- [x] [lazy-llm-deduplicate-main-script](done/lazy-llm-deduplicate-main-script.md) - Deduplicate lazy-llm main script (standalone vs window path)
-- [x] [lazy-llm-fix-install-script](done/lazy-llm-fix-install-script.md) - Fix install.sh to include nvim-note-plugin
-- [x] [lazy-llm-fix-note-plugin-pane-ref](done/lazy-llm-fix-note-plugin-pane-ref.md) - Fix note plugin to use stable pane IDs
-- [x] [lazy-llm-unify-pane-resolution](done/lazy-llm-unify-pane-resolution.md) - Unify pane resolution logic into shared library
-
+## Done (6)
+- [x] [lazy-llm-session-management](lazy-llm-session-management.md) - Add session listing, management, and TUI session manager
+- [x] [lazy-llm-fix-install-script](lazy-llm-fix-install-script.md) - Fix install.sh to include nvim-note-plugin
+- [x] [lazy-llm-deduplicate-main-script](lazy-llm-deduplicate-main-script.md) - Deduplicate lazy-llm main script (standalone vs window path)
+- [x] [lazy-llm-fix-note-plugin-pane-ref](lazy-llm-fix-note-plugin-pane-ref.md) - Fix note plugin to use stable pane IDs
+- [x] [lazy-llm-unify-pane-resolution](lazy-llm-unify-pane-resolution.md) - Unify pane resolution logic into shared library
+- [x] [lazy-llm-add-stale-pane-validation](lazy-llm-add-stale-pane-validation.md) - Add stale pane validation to all scripts
