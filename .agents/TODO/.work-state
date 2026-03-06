@@ -1,4 +1,4 @@
 mode: loop
-task: lazy-llm-fix-note-plugin-pane-ref
+task: lazy-llm-unify-pane-resolution
 phase: complete
-started: 2026-03-06T13:30:00Z
+started: 2026-03-06T13:40:00Z
