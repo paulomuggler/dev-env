@@ -1,12 +1,7 @@
 # TODO Index
 > Auto-generated from task files. Run `/todo lint` to regenerate.
 
-## Pending (1)
-
-### P3 - Low
-- [ ] [lazy-llm-update-tech-debt-docs](lazy-llm-update-tech-debt-docs.md) - Update TECH_DEBT.md and TODO.md to reflect current state
-
-## Done (13)
+## Done (14)
 - [x] [lazy-llm-fix-install-script](done/lazy-llm-fix-install-script.md) - Fix install.sh to include nvim-note-plugin
 - [x] [lazy-llm-deduplicate-main-script](done/lazy-llm-deduplicate-main-script.md) - Deduplicate lazy-llm main script (standalone vs window path)
 - [x] [lazy-llm-fix-note-plugin-pane-ref](done/lazy-llm-fix-note-plugin-pane-ref.md) - Fix note plugin to use stable pane IDs
@@ -20,3 +15,4 @@
 - [x] [lazy-llm-fix-append-keystroke-injection](done/lazy-llm-fix-append-keystroke-injection.md) - Replace llm-append keystroke injection with reliable method
 - [x] [lazy-llm-pane-remove-confirmation](done/lazy-llm-pane-remove-confirmation.md) - Add confirmation before removing AI panes
 - [x] [lazy-llm-holding-window-resilience](done/lazy-llm-holding-window-resilience.md) - Make holding window pattern more resilient
+- [x] [lazy-llm-update-tech-debt-docs](done/lazy-llm-update-tech-debt-docs.md) - Update TECH_DEBT.md and TODO.md to reflect current state
