@@ -1,4 +1,4 @@
 mode: loop
-task: lazy-llm-deduplicate-main-script
+task: lazy-llm-fix-note-plugin-pane-ref
 phase: complete
-started: 2026-03-06T13:20:00Z
+started: 2026-03-06T13:30:00Z
