@@ -91,6 +91,7 @@ mode: loop          # single, loop, P0, P1, P2, P3, P4, P5
 task: task-slug     # current task being worked on
 phase: planning     # planning, executing, verify, complete
 started: 2026-02-06T21:50:00Z
+pid: 12345          # Claude Code process PID ($PPID) for instance scoping
 ```
 
 | Field | Description |
@@ -99,6 +100,7 @@ started: 2026-02-06T21:50:00Z
 | `task` | Slug of the current task being worked on |
 | `phase` | Current phase: `planning`, `executing`, `verify`, or `complete` |
 | `started` | ISO timestamp when work began |
+| `pid` | PID of the Claude Code process that owns this work state (`$PPID`). Used by the stop hook for instance scoping and crash detection. |
 
 The file is:
 - Created when `/todo work` begins a task
@@ -138,15 +140,20 @@ When a task is completed, a `## Work Report` section is appended. Format:
 Before routing, check if `.agents/TODO/.work-state` exists. If it does:
 
 1. Read the file to get the current work state
-2. Inform the user: "Resuming work on {task} ({phase} phase, {mode} mode)"
-3. Continue from the saved phase:
+2. **Check PID ownership:** Read `pid:` from the file and compare with current `$PPID`:
+   - **PID matches** (same instance, e.g. after context compaction): proceed directly to step 4 — this is our own work.
+   - **PID missing or owner process dead** (crashed/restarted instance): use `AskUserQuestion` to prompt the user: "Found orphaned work state for {task} ({phase} phase). The Claude instance that owned it (PID {pid}) is no longer running — it appears to have crashed or been force-stopped." Options: "Resume" (claim ownership and continue the work loop) / "Ignore" (leave `.work-state` as-is and continue with the user's original requests in this conversation) / "Abort" (delete `.work-state` and proceed normally).
+   - **PID differs and owner process alive** (different active instance): do NOT resume. Use `AskUserQuestion` to let the user know: "Another Claude instance (PID {pid}) is actively working on {task} ({phase} phase). What should this instance do?" Options: "Take over" (update PID and resume) / "Leave it" (proceed with normal routing). If user chooses "Leave it", proceed with normal routing. If "Take over", continue to step 3.
+3. **Update PID:** If resuming, overwrite the `pid:` field with the current `$PPID` to claim ownership.
+4. Inform the user: "Resuming work on {task} ({phase} phase, {mode} mode)"
+5. Continue from the saved phase:
    - If `phase: planning` → continue with plan mode exploration
    - If `phase: executing` → re-read the plan file and continue execution
    - If `phase: verify` → read the task file's `## Verify Plan` section and continue checking off items
    - If `phase: complete` → write the work report, mark done, lint, commit
-4. Do NOT start fresh or re-pick a task — resume the exact task from the state file
+6. Do NOT start fresh or re-pick a task — resume the exact task from the state file
 
-This ensures work survives context compaction.
+This ensures work survives context compaction while preventing accidental takeover of another instance's work.
 
 ## Routing
 
@@ -349,7 +356,7 @@ Each phase transition: update `.work-state` **before** starting the new phase.
 
 #### Phase 1: Plan
 
-1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, and timestamp
+1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, timestamp, and `pid: $PPID` (the Claude Code process PID, for instance scoping)
 2. Update task `status: in-progress`, `updated` to today
 3. Read the full task file body — it IS the agent prompt
 4. Use `EnterPlanMode` to enter plan mode
