@@ -30,6 +30,13 @@ if [[ -f ~/.bash_path ]]; then
   source ~/.bash_path
 fi
 
+if [[ -f "$HOME/.cargo/env" ]]; then
+  . "$HOME/.cargo/env"
+fi
+
+# Mark that .bash_profile has run so .bashrc can skip redundant PATH setup
+export BASH_PROFILE_SOURCED=1
+
 # -----------------------------------------------------------------------------
 # SOURCE .BASHRC
 #

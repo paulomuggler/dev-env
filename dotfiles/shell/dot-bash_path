@@ -37,6 +37,11 @@ if command -v gem >/dev/null 2>&1; then
   export PATH="$(gem environment gemdir)/bin:${PATH}"
 fi
 
+# fzf (git install on Linux)
+if [[ -d "${HOME}/.fzf/bin" ]]; then
+  export PATH="${HOME}/.fzf/bin:${PATH}"
+fi
+
 # Homebrew OpenJDK (macOS)
 if [[ "$(uname -s)" == "Darwin" ]] && [[ -d "/opt/homebrew/opt/openjdk/bin" ]]; then
   export PATH="/opt/homebrew/opt/openjdk/bin:${PATH}"

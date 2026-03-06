@@ -16,8 +16,11 @@ source "${SCRIPT_DIR}/../libs/linker.sh"
 # PACKAGE CONFIGURATION
 # ============================================================================
 
-# Package names per platform (neovim is same across platforms)
-PACKAGE_NAME=$(get_package_name "neovim")
+# Minimum version required for LazyVim
+NVIM_MIN_VERSION="0.10.0"
+
+# GitHub release install location (Linux)
+NVIM_INSTALL_DIR="${HOME}/.local/nvim"
 
 # -----------------------------------------------------------------------------
 # Dependency Check Functions
@@ -44,14 +47,14 @@ check_git_version() {
 }
 
 check_nvim_version() {
-  local min_version="0.9.0"
+  local min_version="${1:-$NVIM_MIN_VERSION}"
   local current_version
 
   if ! check::command_exists nvim; then
     return 1
   fi
 
-  current_version=$(nvim --version | head -n 1 | sed -E 's/NVIM v([0-9]+\.[0-9]+\.[0-9]+)/\1/')
+  current_version=$(nvim --version | head -n 1 | sed -E 's/NVIM v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 
   if ! printf '%s\n' "$min_version" "$current_version" | sort -V -C; then
     log warn "Neovim version $min_version or higher required. Current: $current_version"
@@ -95,16 +98,22 @@ install_neovim() {
     version=$(nvim --version | head -n 1)
     report_ok "neovim already installed ($version)"
   else
-    if dry_run_report "Would install ${PACKAGE_NAME} via package manager"; then
+    if dry_run_report "Would install neovim ${NVIM_MIN_VERSION}+"; then
       return 0
     fi
 
-    log info "Installing ${PACKAGE_NAME}..."
-    if pkg_install "${PACKAGE_NAME}"; then
-      report_changed "neovim installed successfully"
+    if is_macos; then
+      # macOS: Homebrew always has a recent version
+      local pkg
+      pkg=$(get_package_name "neovim")
+      log info "Installing ${pkg} via Homebrew..."
+      if ! pkg_install "${pkg}"; then
+        report_failed "Failed to install neovim"
+        return 1
+      fi
     else
-      report_failed "Failed to install neovim"
-      return 1
+      # Linux: install from GitHub release (distro packages are outdated)
+      install_nvim_from_github || return 1
     fi
 
     # Verify installation
@@ -118,6 +127,61 @@ install_neovim() {
   check_nerd_font || true
 
   return 0
+}
+
+# Install neovim from GitHub release tarball (Linux)
+install_nvim_from_github() {
+  local arch
+  arch=$(uname -m)
+  local tarball_arch
+  case "$arch" in
+    x86_64)  tarball_arch="linux-x86_64" ;;
+    aarch64) tarball_arch="linux-arm64" ;;
+    *)
+      report_failed "Unsupported architecture: $arch"
+      return 1
+      ;;
+  esac
+
+  # Get latest release tag
+  local latest_tag
+  latest_tag=$(curl -fsSL "https://api.github.com/repos/neovim/neovim/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+  if [[ -z "$latest_tag" ]]; then
+    report_failed "Failed to fetch latest neovim release"
+    return 1
+  fi
+
+  local tarball_name="nvim-${tarball_arch}.tar.gz"
+  local download_url="https://github.com/neovim/neovim/releases/download/${latest_tag}/${tarball_name}"
+
+  log info "Installing neovim ${latest_tag} for ${arch}..."
+
+  # Remove old apt neovim if present (it's in the way)
+  if is_ubuntu && pkg_installed neovim; then
+    log info "Removing outdated system neovim package..."
+    sudo apt-get remove -y neovim 2>/dev/null || true
+  fi
+
+  # Download and extract
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  if ! curl -fsSL "$download_url" -o "${tmp_dir}/${tarball_name}"; then
+    rm -rf "$tmp_dir"
+    report_failed "Failed to download neovim ${latest_tag}"
+    return 1
+  fi
+
+  # Clean previous install and extract
+  rm -rf "$NVIM_INSTALL_DIR"
+  mkdir -p "$NVIM_INSTALL_DIR"
+  tar -xzf "${tmp_dir}/${tarball_name}" -C "$NVIM_INSTALL_DIR" --strip-components=1
+  rm -rf "$tmp_dir"
+
+  # Symlink binary into ~/.local/bin
+  mkdir -p "${HOME}/.local/bin"
+  ln -sf "${NVIM_INSTALL_DIR}/bin/nvim" "${HOME}/.local/bin/nvim"
+
+  report_changed "neovim ${latest_tag} installed from GitHub release"
 }
 
 # -----------------------------------------------------------------------------

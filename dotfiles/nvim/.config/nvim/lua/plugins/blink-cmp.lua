@@ -4,6 +4,8 @@
 return {
 	{
 		"saghen/blink.cmp",
+		-- Build fuzzy matcher from source on arm64 (no prebuilt binaries)
+		build = "cargo build --release",
 		opts = function(_, opts)
 			opts.sources = opts.sources or {}
 			opts.sources.providers = opts.sources.providers or {}

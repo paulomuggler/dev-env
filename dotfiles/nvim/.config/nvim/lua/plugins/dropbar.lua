@@ -1,1 +1,1 @@
-/Users/paulomoreira/Projects/dev-env/external/lazy-llm/nvim-dropbar-plugin/.config/nvim/lua/plugins/dropbar.lua
+../../../../../../external/lazy-llm/nvim-dropbar-plugin/.config/nvim/lua/plugins/dropbar.lua
