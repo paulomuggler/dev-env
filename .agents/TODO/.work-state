@@ -1,5 +1,6 @@
-mode: single
-task: todo-auto-clear-context
+mode: loop
+task: test-auto-clear-a
 phase: complete
-started: 2026-03-13T23:35:00Z
-pid: 3026014
+started: 2026-03-14T00:00:00Z
+pid: 3344126
+auto-clear: true
