@@ -92,6 +92,8 @@ task: task-slug     # current task being worked on
 phase: planning     # planning, executing, verify, complete
 started: 2026-02-06T21:50:00Z
 pid: 12345          # Claude Code process PID ($PPID) for instance scoping
+auto-clear: true    # optional — restart Claude between tasks for fresh context
+clear-pending: true # optional — one-shot sentinel for the auto-clear hook
 ```
 
 | Field | Description |
@@ -101,6 +103,8 @@ pid: 12345          # Claude Code process PID ($PPID) for instance scoping
 | `phase` | Current phase: `planning`, `executing`, `verify`, or `complete` |
 | `started` | ISO timestamp when work began |
 | `pid` | PID of the Claude Code process that owns this work state (`$PPID`). Used by the stop hook for instance scoping and crash detection. |
+| `auto-clear` | Optional. When `true`, Claude will be restarted between tasks for a fresh context window. Set by `--auto-clear` flag on `/todo work`. |
+| `clear-pending` | Optional. One-shot sentinel written during task transition. The PostToolUse hook detects this, removes it, and triggers the Claude restart. Never set manually. |
 
 The file is:
 - Created when `/todo work` begins a task
@@ -249,6 +253,7 @@ Parse remaining arguments after `work`:
 - `picker` → Show top 5, user picks, then execute
 - `loop` → Execute tasks continuously (all priorities)
 - `P0`-`P5` → Execute all tasks of that priority until done
+- `--auto-clear` → Flag (combinable with `loop` or priority modes). Restarts Claude between tasks for a fresh context window. When set, write `auto-clear: true` to `.work-state`. Example: `work loop --auto-clear`, `work P1 --auto-clear`.
 
 ### Pick logic
 
@@ -297,7 +302,7 @@ Each phase transition: update `.work-state` **before** starting the new phase.
 
 #### Phase 1: Plan
 
-1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, timestamp, and `pid: $PPID` (the Claude Code process PID, for instance scoping)
+1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, timestamp, `pid: $PPID` (the Claude Code process PID, for instance scoping), and `auto-clear: true` if the `--auto-clear` flag was passed
 2. Update task `status: in-progress`, `updated` to today
 3. Read the full task file body — it IS the agent prompt
 4. Use `EnterPlanMode` to enter plan mode
@@ -342,9 +347,13 @@ Each phase transition: update `.work-state` **before** starting the new phase.
 22. **Task tracking commit:** Commit all `.agents/TODO/` changes (work report, status, INDEX.md) with `[todo]` prefix
 23. **Update state file:**
     - If mode is `single`: delete `.agents/TODO/.work-state`
-    - If mode is `loop` or priority (`P0`, `P1`, etc.): clear task field, pick next eligible task
-    - If no more eligible tasks: delete state file and report summary
-24. In loop/priority modes: repeat pick → plan → execute → verify → complete until no eligible tasks remain (respecting priority filter if set), then report summary
+    - If mode is `loop` or priority (`P0`, `P1`, etc.) **without `auto-clear`**: clear task field, pick next eligible task, continue to step 24
+    - If mode is `loop` or priority **with `auto-clear: true`** AND there are more eligible tasks:
+      1. Pick next eligible task
+      2. Write `.agents/TODO/.work-state` with: the new task slug, `phase: planning`, updated `pid: $PPID`, `auto-clear: true`, and `clear-pending: true`
+      3. **STOP IMMEDIATELY.** Do not begin planning. Do not read any files. Do not output anything further. The PostToolUse hook will detect `clear-pending: true`, kill this Claude process, and relaunch with fresh context. The new instance will pick up the next task via the auto-start SessionStart hook.
+    - If no more eligible tasks (any mode): delete state file and report summary (no restart)
+24. In loop/priority modes (without `auto-clear`): repeat pick → plan → execute → verify → complete until no eligible tasks remain (respecting priority filter if set), then report summary
 
 ### Git Commit Discipline
 
