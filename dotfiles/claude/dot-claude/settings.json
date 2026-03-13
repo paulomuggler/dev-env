@@ -10,6 +10,27 @@
             "statusMessage": "Checking for in-progress TODO work..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/todo-auto-start.sh",
+            "statusMessage": "Checking for auto-start prompt..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/todo-auto-clear.sh",
+            "statusMessage": "Checking for auto-clear transition..."
+          }
+        ]
       }
     ],
     "Stop": [
@@ -35,6 +56,17 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "claude-mesh@claude-mesh": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-mesh": {
+      "source": {
+        "source": "github",
+        "repo": "paulomuggler/claude-mesh"
+      }
+    }
   },
   "skipDangerousModePermissionPrompt": true
 }
