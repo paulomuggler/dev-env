@@ -90,6 +90,9 @@ declare -a PHASE4_CLI_TOOLS=(
   "install-zstd.sh"         # Zstandard compression
   "install-p7zip.sh"        # 7-Zip
   "install-unrar.sh"        # RAR extraction
+
+  # Screenshots (Linux only, skipped on macOS)
+  "install-screenshots.sh"  # grim + flameshot with Ctrl+Shift+4
 )
 
 declare -a PHASE5_DEVELOPMENT=(
