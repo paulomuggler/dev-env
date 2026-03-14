@@ -94,6 +94,7 @@ started: 2026-02-06T21:50:00Z
 pid: 12345          # Claude Code process PID ($PPID) for instance scoping
 auto-clear: true    # optional — restart Claude between tasks for fresh context
 clear-pending: true # optional — one-shot sentinel for the auto-clear hook
+filter: tags:assessment  # optional — restrict pick logic to matching tasks
 ```
 
 | Field | Description |
@@ -105,6 +106,7 @@ clear-pending: true # optional — one-shot sentinel for the auto-clear hook
 | `pid` | PID of the Claude Code process that owns this work state (`$PPID`). Used by the stop hook for instance scoping and crash detection. |
 | `auto-clear` | Optional. When `true`, Claude will be restarted between tasks for a fresh context window. Set by `--auto-clear` flag on `/todo work`. |
 | `clear-pending` | Optional. One-shot sentinel written during task transition. The PostToolUse hook detects this, removes it, and triggers the Claude restart. Never set manually. |
+| `filter` | Optional. Restricts pick logic to matching tasks. Format: `tags:{tag}` (tasks must have the tag). Persists across context clears so the loop stays scoped. Set by `--filter` flag. |
 
 The file is:
 - Created when `/todo work` begins a task
@@ -254,14 +256,17 @@ Parse remaining arguments after `work`:
 - `loop` → Execute tasks continuously (all priorities)
 - `P0`-`P5` → Execute all tasks of that priority until done
 - `--auto-clear` → Flag (combinable with `loop` or priority modes). Restarts Claude between tasks for a fresh context window. When set, write `auto-clear: true` to `.work-state`. Example: `work loop --auto-clear`, `work P1 --auto-clear`.
+- `--filter tags:{tag}` → Restrict the work loop to tasks matching the filter. Only tasks whose `tags` array includes `{tag}` are eligible for picking. Persisted in `.work-state` so the filter survives context clears. Example: `work loop --filter tags:assessment`.
 
 ### Pick logic
 
 1. Read all active task files from `.agents/TODO/*.md` (exclude INDEX.md)
 2. Filter to `status: pending` where ALL `depends-on` slugs have `status: done` (check both active and `done/` directory). Tasks with `status: backlog` are never picked.
 3. If priority filter is set (e.g., `work P0`), additionally filter to only tasks matching that priority
-4. Sort by: priority (P0 first → P5 last), then `created` date (oldest first)
-5. Select the first task (or present top 5 for picker mode)
+4. If `--filter` is set (or `filter` exists in `.work-state` during resume), apply it:
+   - `tags:{tag}` — keep only tasks whose `tags` array includes `{tag}`
+5. Sort by: priority (P0 first → P5 last), then `created` date (oldest first)
+6. Select the first task (or present top 5 for picker mode)
 
 ### Priority loop mode
 
@@ -302,7 +307,7 @@ Each phase transition: update `.work-state` **before** starting the new phase.
 
 #### Phase 1: Plan
 
-1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, timestamp, `pid: $PPID` (the Claude Code process PID, for instance scoping), and `auto-clear: true` if the `--auto-clear` flag was passed
+1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, timestamp, `pid: $PPID` (the Claude Code process PID, for instance scoping), `auto-clear: true` if `--auto-clear` was passed, and `filter: {value}` if `--filter` was passed
 2. Update task `status: in-progress`, `updated` to today
 3. Read the full task file body — it IS the agent prompt
 4. Use `EnterPlanMode` to enter plan mode
@@ -347,13 +352,13 @@ Each phase transition: update `.work-state` **before** starting the new phase.
 22. **Task tracking commit:** Commit all `.agents/TODO/` changes (work report, status, INDEX.md) with `[todo]` prefix
 23. **Update state file:**
     - If mode is `single`: delete `.agents/TODO/.work-state`
-    - If mode is `loop` or priority (`P0`, `P1`, etc.) **without `auto-clear`**: clear task field, pick next eligible task, continue to step 24
+    - If mode is `loop` or priority (`P0`, `P1`, etc.) **without `auto-clear`**: clear task field, pick next eligible task (respecting `filter` if set), continue to step 24
     - If mode is `loop` or priority **with `auto-clear: true`** AND there are more eligible tasks:
-      1. Pick next eligible task
-      2. Write `.agents/TODO/.work-state` with: the new task slug, `phase: planning`, updated `pid: $PPID`, `auto-clear: true`, and `clear-pending: true`
+      1. Pick next eligible task (respecting `filter` if set)
+      2. Write `.agents/TODO/.work-state` with: the new task slug, `phase: planning`, updated `pid: $PPID`, `auto-clear: true`, `filter: {value}` (preserved from current state if set), and `clear-pending: true`
       3. **STOP IMMEDIATELY.** Do not begin planning. Do not read any files. Do not output anything further. The PostToolUse hook will detect `clear-pending: true`, kill this Claude process, and relaunch with fresh context. The new instance will pick up the next task via the auto-start SessionStart hook.
     - If no more eligible tasks (any mode): delete state file and report summary (no restart)
-24. In loop/priority modes (without `auto-clear`): repeat pick → plan → execute → verify → complete until no eligible tasks remain (respecting priority filter if set), then report summary
+24. In loop/priority modes (without `auto-clear`): repeat pick → plan → execute → verify → complete until no eligible tasks remain (respecting priority and tag filters if set), then report summary
 
 ### Git Commit Discipline
 
