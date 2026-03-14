@@ -1,0 +1,7 @@
+mode: loop
+task: filter-test-alpha
+phase: complete
+started: 2026-03-14T00:00:00Z
+pid: 3516882
+auto-clear: true
+filter: tags:filter-test
