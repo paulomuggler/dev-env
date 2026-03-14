@@ -2,7 +2,7 @@
 slug: filter-test-alpha
 title: Filter test Alpha — add comment to SETUP.md
 priority: P2
-status: pending
+status: in-progress
 created: 2026-03-14
 updated: 2026-03-14
 depends-on: []
