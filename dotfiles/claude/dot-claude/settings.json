@@ -10,15 +10,6 @@
             "statusMessage": "Checking for in-progress TODO work..."
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/todo-auto-start.sh",
-            "statusMessage": "Checking for auto-start prompt..."
-          }
-        ]
       }
     ],
     "PostToolUse": [
@@ -68,5 +59,6 @@
       }
     }
   },
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "high"
 }

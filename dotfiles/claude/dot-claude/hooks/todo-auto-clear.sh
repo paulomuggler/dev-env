@@ -4,13 +4,12 @@
 #
 # Detects when the agent writes clear-pending: true to .work-state,
 # indicating a task transition in auto-clear mode. Removes the sentinel,
-# writes an auto-prompt transport file, kills Claude, and relaunches
-# via tmux send-keys so the new process inherits the shell environment.
+# kills Claude, and relaunches with the continuation prompt via tmux
+# send-keys so the new process inherits the shell environment.
 
 LOG="$HOME/.claude/hook-debug.log"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 WORK_STATE="$PROJECT_DIR/.agents/TODO/.work-state"
-AUTO_PROMPT="$PROJECT_DIR/.agents/TODO/.auto-prompt"
 
 # Read JSON from stdin to check which file was written
 json=$(cat)
@@ -56,27 +55,32 @@ sed -i '/^clear-pending: true$/d' "$WORK_STATE"
 TASK=$(grep '^task:' "$WORK_STATE" | cut -d' ' -f2)
 MODE=$(grep '^mode:' "$WORK_STATE" | cut -d' ' -f2)
 
-# 3. Write auto-prompt transport file
-cat > "$AUTO_PROMPT" <<PROMPT
-Resume /todo work $MODE — pick up task $TASK (auto-clear mode, fresh context).
-PROMPT
+# 3. Create wrapper script that writes its own PID then exec's claude.
+#    exec replaces the wrapper process with claude, preserving the PID.
+#    This gives us the exact PID of the new claude instance.
+WRAPPER="/tmp/claude-auto-clear-$$.sh"
+cat > "$WRAPPER" <<WRAPEOF
+#!/bin/bash
+sed -i "s/^pid:.*/pid: \$\$/" "$WORK_STATE"
+rm -f "$WRAPPER"
+exec bash -ic "claude '/todo work $MODE --auto-clear'"
+WRAPEOF
+chmod +x "$WRAPPER"
 
-echo "[$(date -Iseconds)] auto-clear: wrote auto-prompt for task=$TASK mode=$MODE" >> "$LOG"
+# 4. Find the tmux pane where Claude is actually running (not the focused pane).
+#    Claude's parent process is the shell in the pane, which matches pane_pid.
+CLAUDE_PARENT=$(ps -o ppid= -p "$PPID" | tr -d ' ')
+PANE_ID=$(tmux list-panes -a -F '#{pane_id} #{pane_pid}' | awk -v pid="$CLAUDE_PARENT" '$2 == pid {print $1; exit}')
 
-# 4. Get current tmux pane before killing Claude
-PANE_ID=$(tmux display-message -p '#{pane_id}')
-
-echo "[$(date -Iseconds)] auto-clear: killing Claude (PID=$PPID), will restart in pane=$PANE_ID" >> "$LOG"
+echo "[$(date -Iseconds)] auto-clear: killing Claude (PID=$PPID), will restart in pane=$PANE_ID with prompt for task=$TASK mode=$MODE" >> "$LOG"
 
 # 5. Kill Claude — shell regains control of the pane
 kill "$PPID"
 
-# 6. Wait for shell to be ready
+# 6. Wait for shell to be ready, then launch wrapper
 sleep 0.5
+tmux send-keys -t "$PANE_ID" "$WRAPPER" Enter
 
-# 7. Type 'claude' into the shell via tmux
-tmux send-keys -t "$PANE_ID" "claude" Enter
-
-echo "[$(date -Iseconds)] auto-clear: restart command sent" >> "$LOG"
+echo "[$(date -Iseconds)] auto-clear: restart command sent via wrapper" >> "$LOG"
 
 exit 0
