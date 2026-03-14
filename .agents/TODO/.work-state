@@ -1,6 +1,6 @@
 mode: loop
-task: test-auto-clear-a
+task: test-auto-clear-b
 phase: complete
 started: 2026-03-14T00:00:00Z
-pid: 3344126
+pid: 3516882
 auto-clear: true
