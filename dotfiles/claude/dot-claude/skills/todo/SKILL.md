@@ -24,6 +24,7 @@ You manage the TODO tracking system at `.agents/TODO/`. Each task is a markdown 
 | `updated` | date | Yes | ISO date (YYYY-MM-DD) of last modification. |
 | `depends-on` | list | Yes | Slugs of tasks that must be done before this one. Empty list `[]` if none. |
 | `tags` | list | Yes | Free-form labels. Empty list `[]` if none. |
+| `commits` | list | No | Git commit hashes (short form) for code changes made during this task. Empty list `[]` or omitted for new/unstarted tasks. Populated by the executor during the execute phase. |
 
 ## Priority Levels
 
@@ -67,6 +68,7 @@ created: DATE
 updated: DATE
 depends-on: []
 tags: []
+commits: []
 ---
 
 # TITLE
@@ -143,6 +145,10 @@ When a task is completed, a `## Work Report` section is appended. Format:
 ### Decisions made
 - Key choices and their rationale
 
+### Commits
+- `abc1234` — Description of what the commit does
+(Should match the `commits` list in frontmatter)
+
 ### Files changed
 - `path/to/file.ts` — Description of changes
 
@@ -182,24 +188,12 @@ Parse the first word of `$ARGUMENTS` to route:
 
 | First word | Sub-command |
 |------------|-------------|
-| *(empty)* | **show** — Pretty-print INDEX.md |
 | `lint` | **lint** — Validate + regenerate INDEX.md |
 | `work` | **work** — Pick and execute a task |
-| `done` | **done** — Mark a task as done |
-| `status` | **status** — Kanban-style view |
-| `archive` | **archive** — Move done tasks to `done/` |
-| `focus` | **focus** — Set/show current focus task |
-| `update` | **update** — Modify task frontmatter |
-| `verify` | **verify** — Verify a completed task |
+| `archive` | **archive** — Move done tasks to archive |
 | *(anything else)* | **create** — Parse context, create/update task files |
 
----
-
-## Sub-command: show (no args)
-
-1. Read `.agents/TODO/INDEX.md`
-2. Read `.agents/TODO/.focus` if it exists
-3. Pretty-print the index to the user, highlighting the focus task if set
+For anything not listed (checking status, marking done, updating fields, etc.) — the agent handles it directly from natural language by reading/writing task files. No dedicated route needed.
 
 ---
 
@@ -243,16 +237,6 @@ The user provides free-form context describing work to be done. Parse it and cre
    h. Fill in Context, Key Files (if identifiable), and Acceptance Criteria sections
 5. Run the **lint** procedure to validate and regenerate INDEX.md
 6. Report a summary of all changes: created, updated, merged, split, deprecated, and skipped tasks
-
----
-
-## Sub-command: done \<slug\>
-
-1. Parse the slug from `$ARGUMENTS` (second word)
-2. Read `.agents/TODO/{slug}.md`
-3. Update frontmatter: set `status: done`, update `updated` to today's date
-4. Write the file back
-5. Run the **lint** procedure
 
 ---
 
@@ -334,6 +318,7 @@ Each phase transition: update `.work-state` **before** starting the new phase.
 10. Execute the plan, following the Acceptance Criteria as your checklist
 11. **Code commit discipline:** Commit after each logical unit of work — a completed function, a fixed bug, a batch of related changes. Never leave uncommitted code work.
     - **Code commits only contain project source files.** Never mix in `.agents/TODO/` files.
+    - **Record each code commit hash** in the task file's `commits` frontmatter field (short hash, e.g. `abc1234`). Update the list after each commit.
 
 #### Phase 3a: Verify Plan (fresh subagent)
 
@@ -438,30 +423,6 @@ linter configured and you're doing substantial work, propose setting them up wit
 
 ---
 
-## Sub-command: status
-
-Kanban-style display grouped by status.
-
-### Procedure
-
-1. Read all active task files
-2. Group by status
-3. Display as columns:
-
-```
-┌─────────────┬─────────────┬─────────────┬─────────────┐
-│   PENDING   │ IN PROGRESS │   BLOCKED   │    DONE     │
-├─────────────┼─────────────┼─────────────┼─────────────┤
-│ P0: slug    │ slug        │ slug        │ slug        │
-│ P1: slug    │             │  ↳ dep1     │ slug        │
-│ P2: slug    │             │  ↳ dep2     │             │
-└─────────────┴─────────────┴─────────────┴─────────────┘
-```
-
-Use simple text formatting. Show priority prefix for pending tasks. Show blockers for blocked tasks.
-
----
-
 ## Sub-command: archive
 
 Trigger immediate full archive (same logic as lint auto-archive, but no thresholds — archive ALL done tasks).
@@ -472,75 +433,4 @@ Trigger immediate full archive (same logic as lint auto-archive, but no threshol
 4. Run the **lint** procedure
 5. Report how many tasks were archived
 
----
-
-## Sub-command: focus \<slug\>
-
-- If slug provided: write it to `.agents/TODO/.focus`, confirm to user
-- If no slug provided: read and display current focus, or say none is set
-- Validate that the slug references an existing active task
-
----
-
-## Sub-command: update \<slug\> \<changes\>
-
-1. Parse slug (second word) and changes (remaining text) from `$ARGUMENTS`
-2. Read `.agents/TODO/{slug}.md`
-3. Parse the changes — support natural language like:
-   - `priority P1` or `pri P0`
-   - `depends-on foo-bar` or `dep foo-bar`
-   - `tag backend` or `tags backend,frontend`
-   - `title New Title Here`
-   - `status blocked`
-4. Update the frontmatter fields accordingly
-5. Set `updated` to today's date
-6. Write the file back
-7. Run the **lint** procedure
-
----
-
-## Sub-command: verify \[slug\]
-
-Verify that a task's changes work correctly. Can be used standalone or as part of the work loop.
-
-The verify process has two stages with separate reasoning contexts:
-1. **Verify plan** — a fresh subagent analyzes the task and generates the checklist (what to test)
-2. **Verify execute** — the executor (or calling agent) runs the checks and fixes failures (how to test)
-
-### Standalone usage
-- `/todo verify <slug>` — Verify a specific completed task
-- `/todo verify recent` — Verify all tasks marked done today
-- `/todo verify` (during work loop) — Verify the current task
-
-### Procedure
-
-1. Identify the task to verify:
-   - If slug provided → read that task file
-   - If in work loop → use current task from `.work-state`
-   - If `recent` → glob done tasks with today's `updated` date
-
-2. **Generate verify plan (fresh subagent).** Spawn a `general-purpose` subagent with `model: "sonnet"`:
-   ```
-   Read ~/.claude/skills/todo/verify-agent.md and generate the verify plan
-   for the task file at: .agents/TODO/{slug}.md
-   ```
-   The subagent reads the task file and codebase, then appends a `## Verify Plan` section with concrete check items. The full procedure and heuristics live in `verify-agent.md` (single source of truth).
-
-3. **Execute the verify plan.** Read the `## Verify Plan` checkboxes from the task file and run each one:
-   - For Playwright checks: `browser_navigate`, `browser_snapshot`, interact with the feature, `browser_take_screenshot` for visual evidence, check `browser_console_messages` and `browser_network_requests`
-   - For API checks: curl/httpie the endpoint, verify response shape and status
-   - For static checks: run the specified commands (tsc, lint, tests)
-   - Check off each item as it passes
-
-4. **Append `## Verify Report`** documenting results:
-   ```markdown
-   ## Verify Report
-   - [x] AC: Can drag-drop nodes — Verified: palette renders 7 node types, drag creates node on canvas
-   - [x] Biome lint passes — `pnpm lint` exit code 0
-   - [x] TypeScript compiles cleanly — `tsc --noEmit` exit code 0
-   - [x] Tests pass — 42/42 passing
-   ```
-
-5. If any items fail → fix the issue, re-commit, re-verify failed items only
-6. Once all items pass → continue (in work loop: proceed to Phase 3c human validation)
 
