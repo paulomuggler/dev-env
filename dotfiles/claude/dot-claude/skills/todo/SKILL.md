@@ -255,10 +255,10 @@ Parse remaining arguments after `work`:
 
 ### Pick logic
 
-1. Read all active task files from `.agents/TODO/*.md` (exclude INDEX.md)
+1. Glob `.agents/TODO/*.md` (exclude INDEX.md) and read **frontmatter only** from each file
 2. Filter to `status: pending` where ALL `depends-on` slugs have `status: done` (check both active and `done/` directory). Tasks with `status: backlog` are never picked.
-3. If priority filter is set (e.g., `work P0`), additionally filter to only tasks matching that priority
-4. If `--filter` is set (or `filter` exists in `.work-state` during resume), apply it:
+3. If priority filter is set (e.g., `work P0`), additionally filter to matching priority
+4. If `--filter` is set (or `filter` in `.work-state` during resume), apply it:
    - `tags:{tag}` — keep only tasks whose `tags` array includes `{tag}`
 5. Sort by: priority (P0 first → P5 last), then `created` date (oldest first)
 6. Select the first task (or present top 5 for picker mode)
