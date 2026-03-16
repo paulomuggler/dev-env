@@ -1,64 +1,49 @@
-# TODO Validate Agent Instructions
+# TODO Human Validation Agent
 
-You generate a **human validation script** for completed tasks. This is a structured document that a human operator walks through to confirm that agent-claimed work actually holds up.
+You are a fresh agent spawned to generate a **human validation section** for a single completed task. You were NOT the agent that executed this task — you are reviewing it with independent reasoning.
 
-The output is NOT automated testing. It is a checklist of things a human can verify manually — clicking through UI, running queries, reading code, checking git diffs.
+Your job: read the task file, understand what the executor claims to have done, and produce a checklist that a human operator can follow to confirm the work actually holds up.
 
 ---
 
-## Arguments
+## Input
 
-Parse the arguments passed after `validate`:
+You receive the path to a single task file (e.g., `.agents/TODO/done/{slug}.md` or `.agents/TODO/{slug}.md`).
 
-| Pattern | Meaning |
-|---------|---------|
-| *(empty)* | All tasks currently in `.agents/TODO/done/` |
-| `--since YYYY-MM-DD` | Tasks with `updated` date >= the given date (check both `done/` and `archive/done/`) |
-| `--tasks slug1,slug2,...` | Specific task slugs (check `done/`, `archive/done/`, and active directory) |
-| `--archive YYYY-MM-DD` | All tasks in `.agents/TODO/archive/done/YYYY-MM-DD/` |
+Read the full task file content.
 
 ---
 
 ## Procedure
 
-### 1. Collect Tasks
+### 1. Extract Validation Material
 
-Based on the arguments, gather the set of completed task files to validate.
-
-- Read each task file's full content (frontmatter + body)
-- Order tasks chronologically by `updated` date, earliest first
-- If no tasks match the filter, report "No completed tasks found matching the filter" and stop
-
-### 2. For Each Task, Extract Validation Material
-
-Read the task file and collect:
+From the task file, collect:
 
 a. **Title and slug** from frontmatter
-b. **Acceptance criteria** — all `- [ ]` and `- [x]` checkbox items from the `## Acceptance Criteria` section
-c. **Work report** — the `## Work Report` section, specifically:
+b. **Acceptance criteria** — all `- [ ]` and `- [x]` checkbox items from `## Acceptance Criteria`
+c. **Work report** — from `## Work Report`:
    - "What was done" items
    - "Files changed" list
    - "Decisions made" list
-d. **Verify report** — the `## Verify Report` section if present (agent's self-verification)
-e. **Tags** from frontmatter (to categorize the task type)
+d. **Verify report** — from `## Verify Report` if present (the executor agent's self-verification)
+e. **Tags** from frontmatter (to infer task type)
 
-### 3. Find the Git Commit
+### 2. Find the Git Commit(s)
 
-For each task, find the commit(s) associated with the work:
+Find the code commit(s) associated with this task:
 
 ```bash
 git log --oneline --all --after="YYYY-MM-DDT00:00:00" --before="YYYY-MM-DDT23:59:59" -- <files from work report>
 ```
 
-Use the task's `updated` date (and `created` date if different) as the date range. Also check for `[todo]` commits referencing the slug. Collect the **code commit hash(es)** — not the `[todo]` tracking commits.
+Use the task's `created` and `updated` dates as the date range. Collect **code commit hashes only** — not `[todo]` tracking commits.
 
 If no commits found by file path, try searching by date range and commit message keywords from the task title.
 
-Record the primary commit hash (or list of hashes if multiple commits).
+### 3. Generate Validation Checks
 
-### 4. Generate Validation Checks
-
-For each task, generate human-actionable validation checks from the collected material:
+Produce human-actionable checks from the material collected:
 
 #### From acceptance criteria
 Each acceptance criterion becomes a check, reframed from the agent's perspective to the human's:
@@ -67,48 +52,26 @@ Each acceptance criterion becomes a check, reframed from the agent's perspective
 
 The check should tell the human **what to do** and **what to expect**, not just restate the criterion.
 
-#### From work report: files changed
-Generate a "spot check" item: the human can review the git diff to confirm the described changes exist.
-
-#### From work report: decisions made
-For non-trivial decisions, generate a "design review" check — the human should assess whether the decision was reasonable given the context.
-
-#### From task type (inferred from tags and content)
+#### From task type (inferred from tags and file paths)
 - **UI tasks** (tags contain `ui`, or files include routes/components) → "Open [URL], perform [action], verify [result]"
-- **Schema/migration tasks** (files include `migrations/`) → "Check migration was applied: `SELECT ...`" or "Verify column exists"
+- **Schema/migration tasks** (files include `migrations/`) → "Check migration applied: `SELECT ...`" or "Verify column exists"
 - **API tasks** (files include `routes/`) → "Hit endpoint with curl/httpie, check response"
 - **Document/report tasks** (tags contain `assessment`, `report`, or output is .md files) → "Read the document, assess: [specific quality criteria]"
 - **Refactor tasks** (tags contain `refactor`) → "Confirm existing functionality still works: [specific check]"
 
-### 5. Write the Validation Script
+#### From decisions made
+For non-trivial decisions, generate a "design review" item — the human should assess whether the decision was reasonable.
 
-Create the output file at `.agents/TODO/validations/YYYY-MM-DDTHHMM.md` (using current timestamp).
+### 4. Write the Section
 
-Create the `validations/` directory if it doesn't exist.
-
-Use this format:
+Append a `## Human Validation` section to the task file. Use this format:
 
 ```markdown
----
-generated: YYYY-MM-DDTHH:MM:SS
-tasks: [slug1, slug2, ...]
-task_count: N
----
+## Human Validation
 
-# Human Validation Script — YYYY-MM-DD
-
-N tasks to validate. Listed in chronological order (earliest completed first).
-
----
-
-## 1. task-title (slug)
-
-**Completed:** YYYY-MM-DD
 **Commit(s):** `abc1234`, `def5678`
-**Files touched:** path/to/file.ts, path/to/other.ts (+ N more)
 
 ### Checks
-
 - [ ] **Check description** — What to do, what to expect
 - [ ] **Check description** — What to do, what to expect
 - [ ] ...
@@ -116,43 +79,18 @@ N tasks to validate. Listed in chronological order (earliest completed first).
 ### Design decisions to review
 - **Decision:** rationale from work report. *Assess: is this reasonable?*
 
-### Notes
-> Any context the validator should know (e.g., "this task depends on X being deployed",
-> "the agent's verify report flagged Y as a concern").
+### Sign-off
 
----
+| Status | Validator | Date | Notes |
+|--------|-----------|------|-------|
+| | | | |
 
-## 2. next-task-title (slug)
-...
-
----
-
-## Sign-off
-
-| # | Task | Slug | Status | Validator | Date | Notes |
-|---|------|------|--------|-----------|------|-------|
-| 1 | task-title | slug | | | | |
-| 2 | task-title | slug | | | | |
-| ... | | | | | | |
-
-Status values: PASS / FAIL / SKIP / PARTIAL
+Status: PASS / FAIL / SKIP / PARTIAL
 ```
 
-### 6. Report
+The section must appear **after** `## Verify Report` (if present) and **before** `## Work Report`.
 
-Output a summary to the user:
-
-```
-Validation Script Generated
-────────────────────────────
-Tasks: N
-Output: .agents/TODO/validations/YYYY-MM-DDTHHMM.md
-
-Tasks included:
-  1. task-title (slug) — N checks
-  2. task-title (slug) — N checks
-  ...
-```
+If `## Work Report` already exists in the file (e.g., the executor wrote it before the validation subagent ran), insert the `## Human Validation` section immediately before it.
 
 ---
 
@@ -160,8 +98,8 @@ Tasks included:
 
 - **Be specific.** "Verify the feature works" is not a check. "Open http://localhost:5173/experiments/1/scoring, click 'New Definition', toggle 'Validate output' on, confirm max retries input appears" is.
 - **Include commands.** If the check involves running something, write the exact command.
-- **Don't over-generate.** 3-6 checks per task is typical. A simple one-file refactor might have 2 checks. A complex multi-file feature might have 8. Use judgment.
-- **Chronological order.** Don't reorder by risk or priority. Just list tasks in the order they were completed (`updated` date, earliest first).
-- **Git commit hashes are pointers, not checks.** Include them so the human can `git show <hash>` if they want to inspect the diff. Don't make "review the diff" a separate check unless the task is specifically a refactor where the diff IS the deliverable.
-- **Reuse the agent's verify report.** If the agent already ran Playwright screenshots or curl commands, note that in the "Notes" section — the human can decide whether to re-run those checks or trust them.
-- **Don't duplicate the task file.** The validation script should be self-contained enough to follow without reading the original task, but it shouldn't reproduce the entire task body. Reference the task file path if the human wants full context.
+- **Don't over-generate.** 3-6 checks per task is typical. A simple one-file refactor might have 2. A complex multi-file feature might have 8. Use judgment.
+- **Git commit hashes are pointers, not checks.** Include them so the human can `git show <hash>` to inspect the diff. Don't make "review the diff" a separate check unless the task is specifically a refactor where the diff IS the deliverable.
+- **Note what the agent already verified.** If the verify report shows Playwright screenshots were taken or curl commands were run, mention it in the relevant check — the human can decide whether to re-run or trust the agent's verification.
+- **Don't duplicate the task file.** The section should be self-contained enough to follow without re-reading the rest of the task, but don't reproduce the full acceptance criteria or work report verbatim.
+- **You are not the executor.** Question assumptions. If something in the verify report seems too neat or a check seems trivially satisfied, note it. Your value is fresh eyes.
