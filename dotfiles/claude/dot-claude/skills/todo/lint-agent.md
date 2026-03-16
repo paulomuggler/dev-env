@@ -1,78 +1,39 @@
-# TODO Lint Agent Instructions
+# TODO Lint Agent
 
-You are running the lint procedure for the `.agents/TODO/` task tracking system. This validates all task files, auto-archives old done tasks, and regenerates INDEX.md.
+Maintain the `.agents/TODO/` file hierarchy: move done tasks, archive old ones, regenerate INDEX.md.
 
 ---
 
 ## Procedure
 
-### 1. File Discovery
+### 1. Move Done Tasks
 
-- Glob `.agents/TODO/*.md` (exclude `INDEX.md`) to find all active task files
-- Glob `.agents/TODO/done/*.md` for done-reference checking
+Glob `.agents/TODO/*.md` (exclude `INDEX.md`). Read frontmatter only. Any file with `status: done` → move to `.agents/TODO/done/`. Create `done/` if needed.
 
-### 2. Validate Each Active Task File
+### 2. Auto-Archive
 
-Parse YAML frontmatter (between `---` delimiters) and check:
+Glob `.agents/TODO/done/*.md`. Read frontmatter only. Move to `.agents/TODO/archive/done/YYYY-MM-DD/` when:
+- Task's `updated` date is >24h ago (use `updated` date for archive folder name)
+- If `done/` count exceeds 30, archive oldest by `updated` until count is ≤30
 
-a. **Required fields present:** `slug`, `title`, `priority`, `status`, `created`, `updated`, `depends-on`, `tags`
-b. **Slug matches filename** — `slug` value must equal the filename without `.md`
-c. **Priority valid** — one of: `P0`, `P1`, `P2`, `P3`, `P4`, `P5`
-d. **Status valid** — one of: `pending`, `in-progress`, `blocked`, `done`, `backlog`
-e. **Dependencies exist** — each entry in `depends-on` references an existing task slug (active or done)
-f. **No circular dependencies** — DFS cycle detection across all tasks
-g. **No duplicate slugs** across all active task files
-h. **Warn** if >50 active task files
+Create archive directories with `mkdir -p`.
 
-Report any errors or warnings found.
+### 3. Regenerate INDEX.md
 
-### 3. Move Done Tasks
+Read frontmatter from all active tasks (`.agents/TODO/*.md`, exclude INDEX.md) and done tasks (`done/*.md`, not archived). Group by status, sort by priority (P0 first) then `created` date (oldest first).
 
-Any active task file (in `.agents/TODO/`) with `status: done` must be moved to `.agents/TODO/done/`. These are completed tasks that haven't been relocated yet.
-
-```bash
-# For each active task with status: done, move to done/
-mv .agents/TODO/{slug}.md .agents/TODO/done/{slug}.md
-```
-
-Create `.agents/TODO/done/` if it doesn't exist.
-
-### 4. Auto-Archive Done Tasks
-
-Move tasks from `.agents/TODO/done/` to `.agents/TODO/archive/done/YYYY-MM-DD/` when:
-- Task's `updated` date is >24h ago (use the task's `updated` date for the archive folder name)
-- If count of done tasks in `.agents/TODO/done/` exceeds 30, archive the oldest ones (by `updated` date) until count is ≤30
-
-Create the archive date directories as needed (`mkdir -p`).
-
-### 5. Regenerate INDEX.md
-
-Read all active task files + done/ tasks (not archived). Group by status. Sort pending and backlog by priority then by created date (oldest first).
-
-Write `.agents/TODO/INDEX.md` with this format:
+Write `.agents/TODO/INDEX.md`:
 
 ```markdown
 # TODO Index
-> Auto-generated from task files. Run `/todo lint` to regenerate.
+> Auto-generated. Run `/todo lint` to regenerate.
 
 ## Pending (N)
 
 ### P0 - Critical
 - [ ] [slug](slug.md) - Title
 
-### P1 - High
-- [ ] [slug](slug.md) - Title
-
 ### P2 - Normal
-- [ ] [slug](slug.md) - Title
-
-### P3 - Low
-- [ ] [slug](slug.md) - Title
-
-### P4 - Someday
-- [ ] [slug](slug.md) - Title
-
-### P5 - Wishlist
 - [ ] [slug](slug.md) - Title
 
 ## In Progress (N)
@@ -82,38 +43,28 @@ Write `.agents/TODO/INDEX.md` with this format:
 - [!] [slug](slug.md) - Title (blocked by: dep1, dep2)
 
 ## Done (N)
-- [x] [slug](slug.md) - Title
+- [x] [slug](done/slug.md) - Title
 
 ## Backlog (N)
-
-### P2 - Normal
-- [-] [slug](slug.md) - Title
 
 ### P3 - Low
 - [-] [slug](slug.md) - Title
 ```
 
-- Only include priority sub-headings that have tasks
-- Counts in section headers reflect actual task count for that status
-- Omit empty status sections entirely
+Only include priority sub-headings and status sections that have tasks.
 
-### 6. Commit
+### 4. Commit
 
-Stage only `.agents/TODO/` files and commit with `[todo]` prefix:
+Stage only `.agents/TODO/` files:
 ```
-[todo] Lint: validate N tasks, archive M done, regenerate INDEX
+[todo] Lint: move N done, archive M, regenerate INDEX
 ```
 
-### 7. Report
+### 5. Report
 
-Output a summary:
 ```
 Lint Complete
 ─────────────
-Active tasks: N
-Errors: N
-Warnings: N
-Moved to done: N tasks
-Archived: N done tasks
+Active: N | Done: N | Archived: N
 INDEX.md: regenerated
 ```
