@@ -1,6 +1,6 @@
 ---
 name: todo
-description: Manage TODO tasks — create, track, execute, and archive tasks using file-per-task system
+description: Manage TODO tasks — create, track, execute, archive, and validate tasks using file-per-task system
 user-invocable: true
 disable-model-invocation: false
 arguments: $ARGUMENTS
@@ -180,6 +180,7 @@ Parse the first word of `$ARGUMENTS` to route:
 | `focus` | **focus** — Set/show current focus task |
 | `update` | **update** — Modify task frontmatter |
 | `verify` | **verify** — Verify a completed task |
+| `validate` | **validate** — Generate human validation script for completed tasks |
 | *(anything else)* | **create** — Parse context, create/update task files |
 
 ---
@@ -529,3 +530,18 @@ Verify that a task's changes work correctly. Can be used standalone or as part o
 
 8. If any items fail → fix the issue, re-commit, re-verify failed items only
 9. Once all items pass → continue (in work loop: proceed to complete phase)
+
+---
+
+## Sub-command: validate
+
+Generate a human validation script for completed tasks. This produces a document that a human operator can follow to confirm agent-claimed work actually holds up.
+
+**Runs as a subagent.** Spawn a `general-purpose` subagent with `model: "sonnet"`:
+
+```
+Read ~/.claude/skills/todo/validate-agent.md and execute the validation script generation procedure on .agents/TODO/
+Arguments: $ARGUMENTS (everything after "validate")
+```
+
+The full procedure lives in `validate-agent.md` (single source of truth).
