@@ -360,16 +360,16 @@ The executor runs the checks from the verify plan and fixes any failures.
 19. If any items fail → fix the issue, commit the fix (code-only commit), re-verify failed items only
 20. Reset retry counter (`.claude/todo-loop-retries`) on successful verification
 
-#### Phase 3d: Human Validation (fresh subagent)
+#### Phase 3d: Human Validation (fresh subagent, conditional)
 
-After agent verification passes, generate a human validation checklist using a **fresh subagent**.
+After agent verification passes, generate a human validation checklist — **only if the task warrants it.** Many purely technical tasks (refactors, bug fixes, backend logic) are fully agent-verifiable and should skip human validation.
 
 21. **Spawn a `general-purpose` subagent** with `model: "sonnet"`:
     ```
     Read ~/.claude/skills/todo/validate-agent.md and generate the human validation section
     for the task file at: .agents/TODO/{slug}.md
     ```
-    The subagent reads the task file (acceptance criteria, verify report, files changed) and appends a `## Human Validation` section with actionable checks for a human operator.
+    The subagent decides whether human validation adds value. If all verification is agent-automatable, it appends a brief skip notice. Otherwise it appends 1-3 focused checks (up to 5 for complex tasks) targeting only things agents cannot assess: subjective UX judgment, production-environment behavior, business logic decisions, or design tradeoffs.
 
 #### Phase 4: Complete
 

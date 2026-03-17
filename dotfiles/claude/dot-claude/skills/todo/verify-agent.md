@@ -34,6 +34,8 @@ Read key changed files to understand what was actually built. Focus on main logi
 
 ### 3. Generate the Verify Plan
 
+**The verify plan is the primary verification layer.** Anything an agent can check — code inspection, commands, API calls, file content, test runs — belongs here, not in human validation. Be thorough.
+
 #### a. Acceptance criteria mapping
 
 For each criterion, determine a **concrete verification method**:
@@ -45,7 +47,24 @@ For each criterion, determine a **concrete verification method**:
 
 Specify what to do: which URL, what to click, what command, what expected output.
 
-#### b. File-type checks (mandatory)
+#### b. Code-site inspections (important)
+
+**Read the actual changed code and add specific inspection checks.** These are high-value:
+- "Read `src/server/engine/scorer.ts` ~line 479: confirm `resolveJudgeSettings()` returns `mc.temperature`"
+- "Inspect `src/server/db/repositories/trial-repo.ts` `updateStatus`: confirm UPDATE SQL includes `AND status IN (...)` guard"
+- "Check that `findOrCreate` handles the boolean return from `updateStatus` and logs warning on `false`"
+
+Code-site checks verify the *implementation* matches the *intent*. Don't just trust the acceptance criteria — verify the code does what it claims.
+
+#### c. Edge cases and regressions
+
+The executor tested the happy path. Add checks for:
+- Empty/null inputs, missing data
+- Concurrent or duplicate operations
+- Terminal/error state re-entry
+- Backward compatibility with existing behavior
+
+#### d. File-type checks (mandatory)
 
 | Changed file pattern | Required check |
 |---------------------|----------------|
@@ -55,18 +74,20 @@ Specify what to do: which URL, what to click, what command, what expected output
 | `*.test.*` / `*.spec.*` | Run the test files |
 | Code with nearby tests | Run related tests |
 
-#### c. Static checks
+#### e. Static checks
 
 If TS/JS files changed, always include lint + typecheck.
 
 ### 4. Write the Verify Plan
 
-Append `## Verify Plan` to the task file (after `## Acceptance Criteria`, before any `## Verify Report` / `## Work Report`):
+Append `## Verify Plan` to the task file (after `## Acceptance Criteria`, before any `## Work Report` / `## Verify Report`):
 
 ```markdown
 ## Verify Plan
 - [ ] AC: Feature → Concrete check: navigate to X, click Y, expect Z
-- [ ] AC: Another → Run `command`, expect exit code 0
+- [ ] AC: Another → Read `file:line`, confirm pattern
+- [ ] Edge: Empty input → describe what to check
+- [ ] Code: `src/path.ts` ~line N → confirm specific implementation detail
 - [ ] Lint: `pnpm lint` passes
 - [ ] Typecheck: `tsc --noEmit` passes
 - [ ] Tests: `pnpm test --filter package` — all passing
@@ -76,8 +97,10 @@ Append `## Verify Plan` to the task file (after `## Acceptance Criteria`, before
 
 ## Guidelines
 
-- **Be concrete.** Include URLs, commands, expected values.
-- **4-8 checks** per task. Simple refactor: 3. Complex feature: 10. Use judgment.
+- **Be concrete.** Include file paths, line numbers, commands, expected values.
+- **5-10 checks** per task. Simple refactor: 3-4. Complex feature: 10+. Use judgment.
 - **Read the actual code**, not just the task description. Discrepancies are the most valuable things to catch.
-- **Check the edges.** The executor tested the happy path. Think about empty input, disabled features, regressions.
+- **Code-site inspection is your superpower.** The executor may have written code that satisfies the letter but not the spirit of a criterion. Verify implementation details.
+- **Check the edges.** Think about empty input, disabled features, concurrent access, regressions.
 - **You are not the executor.** If a criterion seems hard to verify, note it — it may indicate the executor cut corners.
+- **Claim everything automatable.** If an agent can check it by reading code, running a command, or hitting an API — it goes in the verify plan. Leave only subjective judgment and production-environment testing for humans.
