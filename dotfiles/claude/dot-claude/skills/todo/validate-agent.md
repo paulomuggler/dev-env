@@ -83,6 +83,9 @@ Append `## Human Validation` to the task file:
 - [ ] **Check description** — What to do, what to expect
 - [ ] ...
 
+### Design Decisions
+- **Decision:** rationale. *Assess: is this the right tradeoff?*
+
 ### Sign-off
 
 | Status | Validator | Date | Notes |
@@ -92,7 +95,7 @@ Append `## Human Validation` to the task file:
 Status: PASS / FAIL / SKIP / PARTIAL
 ```
 
-Omit the "Design decisions to review" subsection unless there are genuine design tradeoffs needing human judgment. Don't manufacture them.
+**Design Decisions** is always present — extract non-obvious choices from the Work Report's "Decisions made" section and the Verify Report. Frame each as: what was chosen, why, and what the human should assess. Even simple tasks have at least one (e.g., "chose to add a guard clause rather than a wrapper function"). If genuinely none exist, write "None — straightforward implementation."
 
 ---
 
