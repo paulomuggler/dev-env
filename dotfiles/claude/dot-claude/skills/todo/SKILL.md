@@ -320,13 +320,21 @@ Each phase transition: update `.work-state` **before** starting the new phase.
     - **Code commits only contain project source files.** Never mix in `.agents/TODO/` files.
     - **Record each code commit hash** in the task file's `commits` frontmatter field (short hash, e.g. `abc1234`). Update the list after each commit.
 
+#### Execution Quality Principles
+
+These principles guide HOW you execute, not just WHAT you execute:
+
+- **Fidelity:** The implementation should accurately represent what it does. Interfaces match their semantics (reads are GETs, mutations are POSTs). Uncertainty is displayed, not hidden (tooltips on computed metrics, error bars on averaged quantities). When two approaches have comparable effort, prefer the more correct one.
+- **Completeness:** When implementing a pattern or fix, apply it everywhere it's relevant — not just the first location. A change that works in the compare view but not the run detail view is incomplete. Before transitioning to verify, scan the codebase for other locations where the same treatment should apply. Either include them or explicitly justify their exclusion in the work report.
+- **Parsimony:** Implement exactly what's needed. No speculative features, no backwards-compatibility shims for pre-prototype code, no abstractions without concrete consumers. But also no half-measures that technically satisfy a criterion without solving the actual problem — if the useful thing is X and you can only deliver X/2, flag it for discussion rather than shipping something useless.
+
 #### Phase 3a: Verify Plan (fresh subagent)
 
 Generate the verify plan using a **fresh subagent** (separate reasoning context — avoids the executor's blind spots about what to test).
 
 12. **Update state file:** Set `phase: verify`
 13. **Task tracking commit:** Commit the task file status change to in-progress (`.agents/TODO/` files only, prefix message with `[todo]`)
-14. **Spawn a `general-purpose` subagent** with `model: "sonnet"`:
+14. **Spawn a `general-purpose` subagent** with `model: "opus"`:
     ```
     Read ~/.claude/skills/todo/verify-agent.md and generate the verify plan
     for the task file at: .agents/TODO/{slug}.md
@@ -351,7 +359,8 @@ The executor runs the checks from the verify plan and fixes any failures.
 
 16. Read the `## Verify Plan` section from the task file
 17. **Execute each item**, checking them off as they pass. For Playwright verification:
-    - Use `browser_navigate` to open the relevant page
+    - Determine the dev server URL from `package.json` scripts (e.g., `--port 3040` → `http://localhost:3040`)
+    - Use `browser_navigate` to open the relevant page — **always attempt this before marking any Playwright check as skipped**
     - Use `browser_snapshot` to capture the accessibility tree
     - **Actually interact with the feature** — click buttons, fill forms, trigger the behavior
     - Use `browser_take_screenshot` for visual evidence
@@ -364,7 +373,7 @@ The executor runs the checks from the verify plan and fixes any failures.
 
 After agent verification passes, generate a human validation checklist — **only if the task warrants it.** Many purely technical tasks (refactors, bug fixes, backend logic) are fully agent-verifiable and should skip human validation.
 
-21. **Spawn a `general-purpose` subagent** with `model: "sonnet"`:
+21. **Spawn a `general-purpose` subagent** with `model: "opus"`:
     ```
     Read ~/.claude/skills/todo/validate-agent.md and generate the human validation section
     for the task file at: .agents/TODO/{slug}.md
