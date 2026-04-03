@@ -16,17 +16,25 @@ Glob `.agents/TODO/*.md` (exclude `INDEX.md`). Read frontmatter only. Any file w
 
 Also check the reverse: glob `.agents/TODO/backlog/*.md`. Any file whose status is NOT `backlog` (e.g., promoted to `pending`) → move back to `.agents/TODO/`.
 
+### 1c. Move Closed Tasks
+
+Glob `.agents/TODO/*.md` (exclude `INDEX.md`) and `.agents/TODO/backlog/*.md`. Read frontmatter only. Any file with `status: closed` → move to `.agents/TODO/closed/`. Create `closed/` if needed.
+
 ### 2. Auto-Archive
 
 Glob `.agents/TODO/done/*.md`. Read frontmatter only. Move to `.agents/TODO/archive/done/YYYY-MM-DD/` when:
 - Task's `updated` date is >24h ago (use `updated` date for archive folder name)
 - If `done/` count exceeds 30, archive oldest by `updated` until count is ≤30
 
+Glob `.agents/TODO/closed/*.md`. Read frontmatter only. Move to `.agents/TODO/archive/closed/YYYY-MM-DD/` when:
+- Task's `updated` date is >24h ago (use `updated` date for archive folder name)
+- If `closed/` count exceeds 30, archive oldest by `updated` until count is ≤30
+
 Create archive directories with `mkdir -p`.
 
 ### 3. Regenerate INDEX.md
 
-Read frontmatter from all active tasks (`.agents/TODO/*.md`, exclude INDEX.md), backlog tasks (`backlog/*.md`), and done tasks (`done/*.md`, not archived). Group by status, sort by priority (P0 first) then `created` date (oldest first).
+Read frontmatter from all active tasks (`.agents/TODO/*.md`, exclude INDEX.md), backlog tasks (`backlog/*.md`), done tasks (`done/*.md`, not archived), and closed tasks (`closed/*.md`, not archived). Group by status, sort by priority (P0 first) then `created` date (oldest first).
 
 Write `.agents/TODO/INDEX.md`:
 
@@ -51,6 +59,9 @@ Write `.agents/TODO/INDEX.md`:
 ## Done (N)
 - [x] [slug](done/slug.md) - Title
 
+## Closed (N)
+- [slug](closed/slug.md) - Title
+
 ## Backlog (N)
 
 ### P3 - Low
@@ -63,7 +74,7 @@ Only include priority sub-headings and status sections that have tasks.
 
 Stage only `.agents/TODO/` files:
 ```
-[todo] Lint: move N done, N backlog, archive M, regenerate INDEX
+[todo] Lint: move N done, N closed, N backlog, archive M, regenerate INDEX
 ```
 
 ### 5. Report
@@ -71,6 +82,6 @@ Stage only `.agents/TODO/` files:
 ```
 Lint Complete
 ─────────────
-Active: N | Backlog: N | Done: N | Archived: N
+Active: N | Backlog: N | Done: N | Closed: N | Archived: N
 INDEX.md: regenerated
 ```

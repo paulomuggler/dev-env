@@ -19,7 +19,7 @@ You manage the TODO tracking system at `.agents/TODO/`. Each task is a markdown 
 | `slug` | string | Yes | Kebab-case identifier. Must match filename (without `.md`). |
 | `title` | string | Yes | Human-readable task title. |
 | `priority` | enum | Yes | `P0`-`P5` (see Priority Levels below) |
-| `status` | enum | Yes | `pending`, `in-progress`, `blocked`, `done`, `backlog` |
+| `status` | enum | Yes | `pending`, `in-progress`, `blocked`, `done`, `closed`, `backlog` |
 | `created` | date | Yes | ISO date (YYYY-MM-DD) when task was created. |
 | `updated` | date | Yes | ISO date (YYYY-MM-DD) of last modification. |
 | `depends-on` | list | Yes | Slugs of tasks that must be done before this one. Empty list `[]` if none. |
@@ -45,6 +45,7 @@ You manage the TODO tracking system at `.agents/TODO/`. Each task is a markdown 
 | `in-progress` | Currently being worked on |
 | `blocked` | Cannot proceed — `depends-on` tasks not done yet |
 | `done` | Completed, ready for archival |
+| `closed` | Resolved without implementation — obsolete, superseded, or won't-do. Include a one-line reason in the task body. |
 | `backlog` | Not yet actionable — idea, research needed, or deferred. Completely excluded from work loop. Promote to `pending` when ready. |
 
 **Backlog vs priority:** `status: backlog` is orthogonal to priority. Backlog tasks have priorities too (P0-P5) but are explicitly excluded from the work loop. A P1 backlog task is important but not yet actionable. Promote to `pending` when ready. The work loop only picks `status: pending` tasks.
@@ -55,7 +56,9 @@ You manage the TODO tracking system at `.agents/TODO/`. Each task is a markdown 
 - Active tasks: `.agents/TODO/{slug}.md`
 - Backlog tasks: `.agents/TODO/backlog/{slug}.md`
 - Done tasks: `.agents/TODO/done/{slug}.md`
-- Archived tasks: `.agents/TODO/archive/done/YYYY-MM-DD/{slug}.md`
+- Closed tasks: `.agents/TODO/closed/{slug}.md`
+- Archived done: `.agents/TODO/archive/done/YYYY-MM-DD/{slug}.md`
+- Archived closed: `.agents/TODO/archive/closed/YYYY-MM-DD/{slug}.md`
 
 ## Task Template
 
@@ -225,7 +228,7 @@ The user provides free-form context describing work to be done. Parse it and cre
    - **Update**: An existing task covers related work but needs its scope, priority, acceptance criteria, or context updated to reflect the new input
    - **Split**: An existing task is too broad and should be broken into multiple focused tasks (archive or delete the original)
    - **Merge**: Multiple existing tasks overlap significantly and should be consolidated into one
-   - **Deprecate**: The new input supersedes or invalidates an existing task — mark it `done` with a note that it was superseded, or delete it if it was never started
+   - **Close**: The new input supersedes or invalidates an existing task — set `status: closed` with a one-line reason (e.g., "Superseded by force compare toggle"), or delete it if it was never started
    - **Create**: No existing task covers this work — create a new one
 4. For each task to create or update:
    a. Generate a kebab-case slug (new tasks) or reuse existing slug (updates)
