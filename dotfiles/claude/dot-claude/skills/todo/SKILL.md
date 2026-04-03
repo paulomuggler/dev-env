@@ -255,7 +255,9 @@ Parse remaining arguments after `work`:
 - `loop` → Execute tasks continuously (all priorities)
 - `P0`-`P5` → Execute all tasks of that priority until done
 - `--auto-clear` → Flag (combinable with `loop` or priority modes). Restarts Claude between tasks for a fresh context window. When set, write `auto-clear: true` to `.work-state`. Example: `work loop --auto-clear`, `work P1 --auto-clear`.
-- `--filter tags:{tag}` → Restrict the work loop to tasks matching the filter. Only tasks whose `tags` array includes `{tag}` are eligible for picking. Persisted in `.work-state` so the filter survives context clears. Example: `work loop --filter tags:assessment`.
+- `--filter tags:{tag}` → Restrict the work loop to tasks matching the filter. Persisted in `.work-state` so the filter survives context clears. Supports inclusion and exclusion:
+  - `tags:{tag}` — include only tasks whose `tags` array includes `{tag}`. Example: `work loop --filter tags:assessment`.
+  - `tags:!{tag}` — exclude tasks whose `tags` array includes `{tag}`. Example: `work loop --filter tags:!meta-design`.
 
 ### Pick logic
 
@@ -264,6 +266,7 @@ Parse remaining arguments after `work`:
 3. If priority filter is set (e.g., `work P0`), additionally filter to matching priority
 4. If `--filter` is set (or `filter` in `.work-state` during resume), apply it:
    - `tags:{tag}` — keep only tasks whose `tags` array includes `{tag}`
+   - `tags:!{tag}` — exclude tasks whose `tags` array includes `{tag}`
 5. Sort by: priority (P0 first → P5 last), then `created` date (oldest first)
 6. Select the first task (or present top 5 for picker mode)
 
