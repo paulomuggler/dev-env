@@ -73,6 +73,8 @@ The body contains `## Context`, `## Key Files`, and `## Acceptance Criteria` sec
 ├── .work-state                  # Active work session (gitignored)
 ├── .focus                       # Current focus task (gitignored)
 ├── {slug}.md                    # Active tasks
+├── backlog/
+│   └── {slug}.md                # Backlog tasks (not yet actionable)
 ├── done/
 │   └── {slug}.md                # Recently completed
 └── archive/done/

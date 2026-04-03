@@ -53,6 +53,7 @@ You manage the TODO tracking system at `.agents/TODO/`. Each task is a markdown 
 
 - Filename: `{slug}.md` (kebab-case, no numeric prefix)
 - Active tasks: `.agents/TODO/{slug}.md`
+- Backlog tasks: `.agents/TODO/backlog/{slug}.md`
 - Done tasks: `.agents/TODO/done/{slug}.md`
 - Archived tasks: `.agents/TODO/archive/done/YYYY-MM-DD/{slug}.md`
 
@@ -256,7 +257,7 @@ Parse remaining arguments after `work`:
 ### Pick logic
 
 1. Glob `.agents/TODO/*.md` (exclude INDEX.md) and read **frontmatter only** from each file
-2. Filter to `status: pending` where ALL `depends-on` slugs have `status: done` (check both active and `done/` directory). Tasks with `status: backlog` are never picked.
+2. Filter to `status: pending` where ALL `depends-on` slugs have `status: done` (check active, `done/`, and `backlog/` directories). Tasks with `status: backlog` are never picked.
 3. If priority filter is set (e.g., `work P0`), additionally filter to matching priority
 4. If `--filter` is set (or `filter` in `.work-state` during resume), apply it:
    - `tags:{tag}` — keep only tasks whose `tags` array includes `{tag}`
