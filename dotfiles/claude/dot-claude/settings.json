@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/todo-resume.sh",
+            "statusMessage": "Checking for in-progress TODO work..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/todo-auto-clear.sh",
+            "statusMessage": "Checking for auto-clear transition..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/todo-work-loop-stop.sh",
+            "statusMessage": "Checking work loop status..."
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/auto-approve-plan.sh",
+            "statusMessage": "Validating plan against current task..."
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "claude-mesh@claude-mesh": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-mesh": {
+      "source": {
+        "source": "github",
+        "repo": "paulomuggler/claude-mesh"
+      }
+    }
+  },
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true
+}

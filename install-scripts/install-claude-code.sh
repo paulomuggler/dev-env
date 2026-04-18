@@ -42,6 +42,38 @@ install_claude_code() {
     fi
   fi
 
+  # Stow Claude Code configuration (settings, hooks, skills)
+  log info "Configuring Claude Code settings and skills..."
+
+  # Ensure ~/.claude directory exists
+  mkdir -p "${HOME}/.claude/skills"
+
+  # Remove existing files that will be replaced by stow symlinks
+  # (stow won't overwrite regular files)
+  rm -f "${HOME}/.claude/CLAUDE.md" "${HOME}/.claude/settings.json" 2>/dev/null
+  rm -rf "${HOME}/.claude/hooks" 2>/dev/null
+  rm -rf "${HOME}/.claude/skills/todo" 2>/dev/null
+
+  # Remove old skill symlinks (migrated to steward plugin)
+  rm -f "${HOME}/.claude/skills/lint-fix" "${HOME}/.claude/skills/code-review" "${HOME}/.claude/skills/architecture-review" 2>/dev/null
+  rm -f "${HOME}/.claude/coding-standards" 2>/dev/null
+
+  # Stow claude config package
+  if ! stow_package "claude"; then
+    report_failed "Failed to stow Claude Code configuration"
+    return 1
+  fi
+  report_changed "Claude Code configuration stowed"
+
+  # Install steward plugin (lint, review, arch, standards)
+  local steward_dir="${HOME}/Projects/steward"
+  local steward_link="${HOME}/.claude/plugins/steward"
+  if [[ -d "${steward_dir}" ]] && [[ ! -e "${steward_link}" ]]; then
+    mkdir -p "${HOME}/.claude/plugins"
+    ln -s "${steward_dir}" "${steward_link}"
+    report_changed "Steward plugin linked"
+  fi
+
   # Display authentication info
   log info ""
   log info "Claude Code has been installed successfully!"

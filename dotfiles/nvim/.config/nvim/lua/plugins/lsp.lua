@@ -18,7 +18,6 @@ return {
         "json-lsp", -- JSON
         "yaml-language-server", -- YAML
         "bash-language-server", -- Bash
-        "omnisharp", -- C#
         "clangd", -- C/C++
         "marksman", -- Markdown (alternative to markdown_oxide)
 
@@ -127,9 +126,6 @@ return {
         -- Bash
         bashls = {},
 
-        -- C#
-        omnisharp = {},
-
         -- C/C++
         clangd = {
           cmd = {
@@ -145,6 +141,10 @@ return {
 
         -- Markdown
         marksman = {},
+
+        -- Disable C#
+        omnisharp = { enabled = false },
+        csharp_ls = { enabled = false },
       },
     },
   },

@@ -13,6 +13,9 @@ alias cls='clear && printf "\033[3J"'
 # Open files in Sublime Text from the terminal.
 alias sublime="open -a Sublime\ Text"
 
+# Run Claude Code with auto-accept permissions.
+alias claude='claude --dangerously-skip-permissions'
+
 # Enable color support for 'ls' and distinguish file types.
 # This is a safe way to do it that works on different systems.
 if ls --color=always > /dev/null 2>&1; then
