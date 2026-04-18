@@ -19,7 +19,25 @@ source "${SCRIPT_DIR}/../libs/linker.sh"
 install_shell_config() {
   log info "=== Installing Shell Configuration ==="
 
-  # Stow shell configuration
+  # NixOS with home-manager manages .bashrc/.bash_profile - skip stowing
+  if is_nixos; then
+    log info "NixOS detected - checking shell configuration..."
+
+    # Check if .shell.d is already linked (expected for NixOS setup)
+    if [[ -L "${HOME}/.shell.d" ]]; then
+      log info "✓ OK: .shell.d already linked (home-manager manages base shell files)"
+      report_ok "Shell configuration ready (NixOS/home-manager mode)"
+    else
+      log warn ".shell.d not found - creating symlink..."
+      local dotfiles_dir
+      dotfiles_dir="$(cd "${SCRIPT_DIR}/../dotfiles" && pwd)"
+      ln -sfn "${dotfiles_dir}/shell/dot-shell.d" "${HOME}/.shell.d"
+      report_changed "Created .shell.d symlink"
+    fi
+    return 0
+  fi
+
+  # Stow shell configuration (non-NixOS platforms)
   log info "Applying shell configuration..."
   if ! stow_package "shell"; then
     report_failed "Failed to apply shell configuration"

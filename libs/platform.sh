@@ -45,6 +45,9 @@ get_platform() {
           arch|manjaro)
             platform="arch"
             ;;
+          nixos)
+            platform="nixos"
+            ;;
           *)
             platform="linux"
             ;;
@@ -71,10 +74,14 @@ is_arch() {
   [[ "$(get_platform)" == "arch" ]]
 }
 
+is_nixos() {
+  [[ "$(get_platform)" == "nixos" ]]
+}
+
 is_supported_platform() {
   local platform
   platform=$(get_platform)
-  [[ "$platform" == "macos" || "$platform" == "ubuntu" || "$platform" == "arch" ]]
+  [[ "$platform" == "macos" || "$platform" == "ubuntu" || "$platform" == "arch" || "$platform" == "nixos" ]]
 }
 
 # -----------------------------------------------------------------------------
@@ -123,6 +130,10 @@ has_package_manager() {
       ;;
     arch)
       check::command_exists pacman
+      ;;
+    nixos)
+      # NixOS manages packages declaratively - always "available"
+      return 0
       ;;
     *)
       return 1
@@ -178,6 +189,11 @@ pkg_install() {
     arch)
       sudo pacman -S --noconfirm "$package"
       ;;
+    nixos)
+      # NixOS packages are managed declaratively via /etc/nixos
+      log info "NixOS: Skipping pkg_install for '${package}' (manage via /etc/nixos)"
+      return 0
+      ;;
     *)
       log error "Unsupported platform for package installation"
       return 1
@@ -222,6 +238,11 @@ pkg_update() {
     arch)
       sudo pacman -Sy
       ;;
+    nixos)
+      # NixOS updates via nix flake update / nixos-rebuild
+      log info "NixOS: Skipping pkg_update (use 'nix flake update' and 'nixos-rebuild switch')"
+      return 0
+      ;;
     *)
       log error "Unsupported platform for package update"
       return 1
@@ -243,6 +264,10 @@ pkg_installed() {
     arch)
       pacman -Q "$package" >/dev/null 2>&1
       ;;
+    nixos)
+      # On NixOS, check if command exists (packages are in PATH if installed)
+      command -v "$package" >/dev/null 2>&1
+      ;;
     *)
       return 1
       ;;
@@ -260,7 +285,7 @@ validate_platform() {
   # Check if platform is supported
   if ! is_supported_platform; then
     report_failed "Unsupported platform: $(uname -s)"
-    log error "Supported platforms: macOS, Ubuntu/Debian, Arch Linux"
+    log error "Supported platforms: macOS, Ubuntu/Debian, Arch Linux, NixOS"
     exit 1
   fi
 
@@ -298,6 +323,7 @@ validate_platform() {
 export -f get_platform
 export -f is_ubuntu
 export -f is_arch
+export -f is_nixos
 export -f is_supported_platform
 export -f is_omarchy
 export -f is_wayland

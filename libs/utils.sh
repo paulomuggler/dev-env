@@ -161,6 +161,13 @@ stow_package() {
     dotfiles_dir="$(cd "${_LIBS_DIR}/../dotfiles" && pwd)"
     local package_dir="${dotfiles_dir}/${package}"
 
+    # NixOS: Skip stowing "shell" package (home-manager manages .bashrc/.bash_profile)
+    # The .shell.d directory is linked directly, so tool configs still work
+    if is_nixos && [[ "${package}" == "shell" ]]; then
+        log info "NixOS: Skipping stow for shell package (managed by home-manager)"
+        return 0
+    fi
+
     if [[ ! -d "${package_dir}" ]]; then
         log warn "Stow package ${package} does not exist at ${package_dir}"
         return 1
