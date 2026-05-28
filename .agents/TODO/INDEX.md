@@ -1,10 +1,13 @@
 # TODO Index
 > Auto-generated from task files. Run `/todo lint` to regenerate.
 
-## Pending (1)
+## Pending (2)
 
 ### P1 - High
 - [ ] [unrelated-task](unrelated-task.md) - Unrelated task — should NOT be picked by filter
+
+### P2 - Medium
+- [ ] [pin-and-control-plugin-versions](pin-and-control-plugin-versions.md) - Pin versions and make updates deliberate (nvim plugins + dev-env tools)
 
 ## Done (4)
 - [x] [filter-test-alpha](done/filter-test-alpha.md) - Filter test Alpha — add comment to SETUP.md
