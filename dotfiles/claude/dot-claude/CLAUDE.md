@@ -50,6 +50,15 @@ Project-level overrides in `.claude/coding-standards/` take precedence over bund
 - Never push unless explicitly asked
 - Never amend unless explicitly asked
 
+## Branch Hygiene
+
+At session start (and definitely before accumulating substantial work), check the current branch with `git branch --show-current`. If it's not `main`/`master`, ask up front:
+
+- Is this work intended to integrate back to main? If yes, by what mechanism (PR, cherry-pick, squash-merge)?
+- Does the branch have an upstream tracking branch? If not, the work isn't backed up.
+
+Don't quietly accumulate dozens of commits on a non-main branch and assume the user knows the integration plan. Flag the divergence early — within the first few commits, not after hundreds. Branches named `eval/`, `scratch/`, `spike/`, `wip/`, `tmp/`, `exp/` are conventional signals that the work needs an explicit integration step; ask about it.
+
 ## Pre-commit Verification
 
 Before every commit that touches code, run **all three checks** on your changed files:
