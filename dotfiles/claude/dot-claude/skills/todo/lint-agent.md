@@ -23,18 +23,20 @@ Glob `.agents/TODO/*.md` (exclude `INDEX.md`) and `.agents/TODO/backlog/*.md`. R
 ### 2. Auto-Archive
 
 Glob `.agents/TODO/done/*.md`. Read frontmatter only. Move to `.agents/TODO/archive/done/YYYY-MM-DD/` when:
-- Task's `updated` date is >24h ago (use `updated` date for archive folder name)
+- Task's `updated` timestamp is >24h ago (use only the **date portion** — first 10 chars — of `updated` for the archive folder name; the `_HH:mm` suffix is dropped)
 - If `done/` count exceeds 30, archive oldest by `updated` until count is ≤30
 
 Glob `.agents/TODO/closed/*.md`. Read frontmatter only. Move to `.agents/TODO/archive/closed/YYYY-MM-DD/` when:
-- Task's `updated` date is >24h ago (use `updated` date for archive folder name)
+- Task's `updated` timestamp is >24h ago (use only the **date portion** of `updated` for the archive folder name)
 - If `closed/` count exceeds 30, archive oldest by `updated` until count is ≤30
+
+Note: `updated` may be in either `YYYY-MM-DD` (legacy) or `YYYY-MM-DD_HH:mm` (current) format. Both sort and compare lexicographically; truncate to 10 chars for folder names.
 
 Create archive directories with `mkdir -p`.
 
 ### 3. Regenerate INDEX.md
 
-Read frontmatter from all active tasks (`.agents/TODO/*.md`, exclude INDEX.md), backlog tasks (`backlog/*.md`), done tasks (`done/*.md`, not archived), and closed tasks (`closed/*.md`, not archived). Group by status, sort by priority (P0 first) then `created` date (oldest first).
+Read frontmatter from all active tasks (`.agents/TODO/*.md`, exclude INDEX.md), backlog tasks (`backlog/*.md`), done tasks (`done/*.md`, not archived), and closed tasks (`closed/*.md`, not archived). Group by status, sort by priority (P0 first) then `created` timestamp (oldest first; lexicographic string compare tolerates both date-only and date_time formats).
 
 Write `.agents/TODO/INDEX.md`:
 

@@ -144,11 +144,12 @@ Before creating tasks, the agent reads INDEX.md and checks for:
 | Command | Behavior |
 |---------|----------|
 | `/todo work` | Pick one task, execute it, stop |
-| `/todo work loop` | Execute all pending tasks continuously |
-| `/todo work P0` | Execute all P0 tasks, then stop |
+| `/todo work loop` | Execute all pending tasks continuously, batch by batch in ascending batch order |
+| `/todo work loop --batches 8,11,12` | Run batch 8, then 11, then 12 (in order), ignore the rest |
+| `/todo work P0` | Execute all P0 tasks across all batches, then stop |
 | `/todo work picker` | Show top 5 eligible tasks, user picks one |
 
-Pick logic: filters to `status: pending` tasks whose dependencies are all done, sorts by priority then creation date.
+Pick logic: filters to `status: pending` tasks whose dependencies are all done, then sorts by **batch** (the leading number in the slug; `--batches` order or ascending), then in-batch slug sequence, then priority, then creation date. Batch is the primary execution axis; priority is an in-batch tiebreak (plus the `work P0`-`P5` cross-batch sweep). See SKILL.md → Batch ordering model.
 
 ## Git Discipline
 
