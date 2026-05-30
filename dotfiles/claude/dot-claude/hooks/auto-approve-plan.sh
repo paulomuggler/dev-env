@@ -32,11 +32,24 @@ fi
 
 echo "[$(date -Iseconds)] Looking for plan matching task=$TASK" >> "$LOG"
 
-# Search ALL plan files for the matching header (not just most recent)
+# Build acceptable plan-header values: the full task slug, plus the slug with
+# any leading numeric/category prefix stripped (e.g. "01-1c-14-foo" → "foo").
+# This tolerates plans written before the docs required the full slug.
+TASK_SUFFIX=$(echo "$TASK" | sed -E 's/^([0-9]+-[0-9a-z]+-[0-9]+-)//')
+
+matches_task() {
+  local header_line
+  header_line=$(head -1 "$1")
+  [ "$header_line" = "# Plan: $TASK" ] && return 0
+  [ -n "$TASK_SUFFIX" ] && [ "$TASK_SUFFIX" != "$TASK" ] && [ "$header_line" = "# Plan: $TASK_SUFFIX" ] && return 0
+  return 1
+}
+
+# Search ALL plan files for a matching header (full slug OR stripped suffix)
 PLAN_FILE=""
 for f in "$PLANS_DIR"/*.md; do
   [ -f "$f" ] || continue
-  if head -1 "$f" | grep -q "^# Plan: $TASK"; then
+  if matches_task "$f"; then
     PLAN_FILE="$f"
     break
   fi
@@ -54,9 +67,9 @@ if [ -z "$PLAN_FILE" ]; then
   exit 0
 fi
 
-# Check if plan file starts with the expected header
-if grep -q "^# Plan: $TASK" "$PLAN_FILE"; then
-  echo "[$(date -Iseconds)] ALLOW — plan=$PLAN_FILE matches task=$TASK" >> "$LOG"
+# Check if plan file starts with an acceptable header
+if [ -n "$PLAN_FILE" ] && matches_task "$PLAN_FILE"; then
+  echo "[$(date -Iseconds)] ALLOW — plan=$PLAN_FILE matches task=$TASK (or suffix '$TASK_SUFFIX')" >> "$LOG"
   cat <<EOF
 {
   "hookSpecificOutput": {
