@@ -1,26 +1,40 @@
 #!/bin/bash
 # Hook: Auto-clear context between tasks in TODO work loop
-# Triggered by: PostToolUse (Write|Edit matcher)
+# Triggered by: PostToolUse (Write|Edit|Bash matcher)
 #
 # Detects when the agent writes clear-pending: true to .work-state,
 # indicating a task transition in auto-clear mode. Removes the sentinel,
 # kills Claude, and relaunches with the continuation prompt via tmux
 # send-keys so the new process inherits the shell environment.
+#
+# Triggers on Write/Edit to .work-state OR Bash commands that mention
+# .work-state (e.g., `cat > .work-state`, `sed -i ... .work-state`,
+# `tee .work-state`). The actual sentinel check below is the source of
+# truth — Bash commands that touch .work-state but don't set
+# clear-pending: true exit cleanly without acting.
 
 LOG="$HOME/.claude/hook-debug.log"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 WORK_STATE="$PROJECT_DIR/.agents/TODO/.work-state"
 
-# Read JSON from stdin to check which file was written
+# Read JSON from stdin to check which file/command was used
 json=$(cat)
 file_path=$(echo "$json" | jq -r '.tool_input.file_path // empty')
+command=$(echo "$json" | jq -r '.tool_input.command // empty')
 
-# Only act on writes to .work-state
-if [[ "$file_path" != *".agents/TODO/.work-state" ]]; then
+# Only act on tool calls that could have touched .work-state
+touches_work_state=0
+if [[ "$file_path" == *".agents/TODO/.work-state" ]]; then
+  touches_work_state=1
+elif [[ "$command" == *".agents/TODO/.work-state"* ]] || [[ "$command" == *".work-state"* ]]; then
+  touches_work_state=1
+fi
+
+if [[ "$touches_work_state" != "1" ]]; then
   exit 0
 fi
 
-echo "[$(date -Iseconds)] auto-clear: Write to .work-state detected" >> "$LOG"
+echo "[$(date -Iseconds)] auto-clear: tool touched .work-state (via $([ -n "$file_path" ] && echo "Write/Edit" || echo "Bash"))" >> "$LOG"
 
 # Check if the file exists and contains clear-pending
 if [ ! -f "$WORK_STATE" ]; then
@@ -75,11 +89,41 @@ PANE_ID=$(tmux list-panes -a -F '#{pane_id} #{pane_pid}' | awk -v pid="$CLAUDE_P
 echo "[$(date -Iseconds)] auto-clear: killing Claude (PID=$PPID), will restart in pane=$PANE_ID with prompt for task=$TASK mode=$MODE" >> "$LOG"
 
 # 5. Kill Claude — shell regains control of the pane
-kill "$PPID"
+CLAUDE_PID="$PPID"
+kill "$CLAUDE_PID"
 
-# 6. Wait for shell to be ready, then launch wrapper
-sleep 0.5
-tmux send-keys -t "$PANE_ID" "$WRAPPER" Enter
+# 6. Wait until the OS has actually reaped Claude. kill -0 returns success
+#    while the PID still exists. Bound the wait to ~3s; after that we proceed
+#    anyway and let the next checks catch any residual badness.
+for _ in $(seq 1 30); do
+  kill -0 "$CLAUDE_PID" 2>/dev/null || break
+  sleep 0.1
+done
+if kill -0 "$CLAUDE_PID" 2>/dev/null; then
+  echo "[$(date -Iseconds)] auto-clear: Claude PID=$CLAUDE_PID still alive after 3s wait" >> "$LOG"
+fi
+
+# 7. Wait until the pane's foreground process is no longer 'claude' — i.e.,
+#    the parent shell has actually regained control of the pty. Bound to ~5s.
+#    Polling pane_current_command (rather than a fixed sleep) avoids the race
+#    where send-keys arrives before readline is ready.
+for _ in $(seq 1 50); do
+  current=$(tmux display-message -p -t "$PANE_ID" '#{pane_current_command}' 2>/dev/null)
+  if [ -n "$current" ] && [ "$current" != "claude" ]; then
+    break
+  fi
+  sleep 0.1
+done
+echo "[$(date -Iseconds)] auto-clear: pane $PANE_ID foreground is now '$current'" >> "$LOG"
+
+# 8. Send the wrapper path and Enter as TWO separate send-keys calls with a
+#    small gap. A single burst of "<path>\n" can be picked up by readline's
+#    bracketed-paste handler, which inserts the newline as a literal char
+#    instead of executing the line. Splitting them keeps each keystroke
+#    distinct.
+tmux send-keys -t "$PANE_ID" -l "$WRAPPER"
+sleep 0.2
+tmux send-keys -t "$PANE_ID" Enter
 
 echo "[$(date -Iseconds)] auto-clear: restart command sent via wrapper" >> "$LOG"
 
