@@ -84,6 +84,7 @@ declare -a PHASE4_CLI_TOOLS=(
   "install-b2.sh"           # Backblaze B2 cloud storage CLI
   "install-glow.sh"         # Markdown renderer
   "install-lynx.sh"         # Text web browser
+  "install-mosh.sh"         # Roaming-friendly UDP remote shell (client + server)
 
   # Compression tools
   "install-xz.sh"           # XZ compression
