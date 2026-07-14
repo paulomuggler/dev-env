@@ -82,42 +82,59 @@ The body contains `## Context`, `## Key Files`, and `## Acceptance Criteria` sec
         └── {slug}.md            # Archived completions
 ```
 
-## The Work Protocol
+## The Work Protocol (orchestrated)
 
-`/todo work` executes tasks through a strict 4-phase state machine:
+`/todo work` runs an **orchestrator → subagents** model: the session that
+invokes it briefs, dispatches, adjudicates, and completes — implementation and
+verification run in fresh subagents, each on the model tier the work warrants.
+The strict state machine:
 
 ```
-planning → executing → verify → complete
+briefing → executing → verifying → complete
 ```
 
-### Phase 1: Plan
+### Phase 1: Brief (orchestrator)
 
-- Enters plan mode, explores the codebase
-- Writes an implementation plan addressing each acceptance criterion
-- Presents the plan for user approval before proceeding
+- Judges the task file dispatch-ready: a zero-context executor must be able to
+  run from it alone (exact paths, resolved decisions, scope fences,
+  verification recipe)
+- Enriches the task file itself where thin; unresolved judgment flips the task
+  to `model: inline`
 
-### Phase 2: Execute
+### Phase 2: Execute (executor subagent — `model:` from frontmatter)
 
-- Implements the approved plan
-- Commits after each logical unit of work
-- Code commits contain only project source files (never `.agents/TODO/`)
+- A dispatched executor (see `execute-agent.md`) implements the brief:
+  `opus` for implementation work, `sonnet` for mechanical sweeps, `inline`
+  when the orchestrator executes itself (interactive plan approval applies
+  only inline)
+- Commits after each logical unit (code-only, never `.agents/TODO/`), records
+  hashes, checks criteria off, appends the Work Report
+- Returns `COMPLETED`, `BLOCKED` (with the precise question — never builds past
+  a fork), or `FAILED` (with diagnosis)
 
-### Phase 3: Verify
+### Phase 3: Verify (fresh verifier subagent)
 
-- Generates a verify plan based on acceptance criteria and changed file types
-- Executes each verification check (tests, type checks, Playwright for UI, curl for APIs)
-- Fixes any failures and re-verifies
+- A separate-context verifier (see `verify-agent.md`) derives its own verify
+  plan from the diff and acceptance criteria, executes every check (tests,
+  typecheck, Playwright for UI, curl for APIs), and appends plan + report
+- Failures loop back: the orchestrator re-dispatches the executor with the
+  findings; bounded at two rework rounds, then escalate
+- A conditional validation subagent appends a `## Human Validation` checklist
+  for what only a person can judge
 
-### Phase 4: Complete
+### Phase 4: Complete (orchestrator)
 
-- Appends a Work Report section documenting what was done, how, and why
-- Marks the task `done`
-- Runs lint to sync INDEX.md
-- Commits all task tracking changes with `[todo]` prefix
+- The orchestrator spot-checks the reports against the running system, marks
+  the task `done`, runs lint, updates `REVIEW-QUEUE.md` (the user's single
+  review surface), and commits tracking changes with `[todo]` prefix
 
-### Resume Across Context Resets
+### Continuity (no restart machinery)
 
-The `.work-state` file tracks the current task and phase. If a session ends mid-work (context compaction, timeout), the next `/todo` invocation detects and resumes from exactly where it left off.
+The `.work-state` file tracks the current task and phase; every durable fact
+lives in committed files. If a session ends mid-work — or stops deliberately
+because the orchestrator's context is near capacity — the next `/todo`
+invocation resumes exactly where it left off. The old auto-clear restart hack
+is retired.
 
 ## Creating Tasks
 
@@ -148,6 +165,7 @@ Before creating tasks, the agent reads INDEX.md and checks for:
 | `/todo work loop --batches 8,11,12` | Run batch 8, then 11, then 12 (in order), ignore the rest |
 | `/todo work P0` | Execute all P0 tasks across all batches, then stop |
 | `/todo work picker` | Show top 5 eligible tasks, user picks one |
+| `... --inline` | Orchestrator executes tasks itself (interactive plan approval) instead of dispatching executors |
 
 Pick logic: filters to `status: pending` tasks whose dependencies are all done, then sorts by **batch** (the leading number in the slug; `--batches` order or ascending), then in-batch slug sequence, then priority, then creation date. Batch is the primary execution axis; priority is an in-batch tiebreak (plus the `work P0`-`P5` cross-batch sweep). See SKILL.md → Batch ordering model.
 

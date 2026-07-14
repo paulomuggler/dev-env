@@ -25,6 +25,8 @@ You manage the TODO tracking system at `.agents/TODO/`. Each task is a markdown 
 | `depends-on` | list | Yes | Slugs of tasks that must be done before this one. Empty list `[]` if none. |
 | `tags` | list | Yes | Free-form labels. Empty list `[]` if none. |
 | `commits` | list | No | Git commit hashes (short form) for code changes made during this task. Empty list `[]` or omitted for new/unstarted tasks. Populated by the executor during the execute phase. |
+| `model` | enum | No | Which model executes this task: `opus` (default — implementation work), `sonnet` (mechanical sweeps: renames, migrations, scaffolding), or `inline` (the orchestrating session executes it itself — judgment-dense work: diagnosis, design adjudication, task breakdown). The orchestrator may override with a noted reason. |
+| `human-validation` | enum | No | `pending` once a `## Human Validation` section is appended and awaits the user; `done` after the user's pass; omitted when validation was skipped as not warranted. Drives `REVIEW-QUEUE.md`. |
 
 ## Priority Levels
 
@@ -88,10 +90,26 @@ Why this task exists, background info for an agent to understand the problem.
 - https://... — why
 - commit `abc1234` — why
 
+## Constraints
+Scope fences and invariants (optional, but strongly recommended for dispatched
+tasks): what NOT to touch, known gotchas, decisions already made that the
+executor must not relitigate.
+
+## Verification recipe
+How to prove it works against the running system (optional; concrete commands,
+URLs, expected outputs). The verifier derives its plan from this plus the diff.
+
 ## Acceptance Criteria
 - [ ] Criterion 1
 - [ ] Criterion 2
 ```
+
+**The task file is the entire context transfer.** A dispatched executor starts
+with zero conversation history — it knows only what the file says plus what the
+files it's told to read say. Write briefs accordingly: exact paths and line
+ranges, resolved judgment calls, explicit scope fences. A task that still
+needs decisions is not dispatch-ready; either resolve them at creation time or
+mark it `model: inline`.
 
 ## .work-state File
 
@@ -100,11 +118,10 @@ Why this task exists, background info for an agent to understand the problem.
 ```yaml
 mode: loop          # single, loop, P0, P1, P2, P3, P4, P5
 task: task-slug     # current task being worked on
-phase: planning     # planning, executing, verify, complete
+phase: briefing     # briefing, executing, verifying, complete
 started: 2026-02-06T21:50:00Z
 pid: 12345          # Claude Code process PID ($PPID) for instance scoping
-auto-clear: true    # optional — restart Claude between tasks for fresh context
-clear-pending: true # optional — one-shot sentinel for the auto-clear hook
+inline: true        # optional — orchestrator executes tasks itself (--inline)
 filter: tags:assessment  # optional — restrict pick logic to matching tasks
 batches: [8, 11, 12]     # optional — ordered batch sequence for the loop (from --batches)
 branch-acknowledged: eval/foo  # optional — user confirmed work on this non-main branch
@@ -114,14 +131,18 @@ branch-acknowledged: eval/foo  # optional — user confirmed work on this non-ma
 |-------|-------------|
 | `mode` | Work mode: `single` (one task), `loop` (all tasks, batch-ordered), or priority level (`P0`-`P5`) |
 | `task` | Slug of the current task being worked on |
-| `phase` | Current phase: `planning`, `executing`, `verify`, or `complete` |
+| `phase` | Current phase: `briefing`, `executing`, `verifying`, or `complete` |
 | `started` | ISO timestamp when work began |
 | `pid` | PID of the Claude Code process that owns this work state (`$PPID`). Used by the stop hook for instance scoping and crash detection. |
-| `auto-clear` | Optional. When `true`, Claude will be restarted between tasks for a fresh context window. Set by `--auto-clear` flag on `/todo work`. |
-| `clear-pending` | Optional. One-shot sentinel written during task transition. The PostToolUse hook detects this, removes it, and triggers the Claude restart. Never set manually. |
+| `inline` | Optional. When `true`, the orchestrating session executes tasks itself instead of dispatching executor subagents. Set by `--inline` on `/todo work`. |
 | `filter` | Optional. Restricts pick logic to matching tasks. Format: `tags:{tag}` (tasks must have the tag). Persists across context clears so the loop stays scoped. Set by `--filter` flag. |
-| `batches` | Optional. Ordered list of batch numbers scoping + sequencing the loop (e.g. `[8, 11, 12]`). Persists across context clears so batch order survives auto-clear restarts. Set by `--batches` flag. |
+| `batches` | Optional. Ordered list of batch numbers scoping + sequencing the loop (e.g. `[8, 11, 12]`). Persists across session boundaries so batch order survives a stop-and-resume. Set by `--batches` flag. |
 | `branch-acknowledged` | Optional. Branch name the user confirmed working on after a Branch Sanity Check warning. Suppresses re-prompts within the same `.work-state` lifetime. Cleared when work-state is deleted or `git checkout` switches branches. |
+
+(`auto-clear` / `clear-pending` are retired: continuity across context limits is
+carried by this file plus the task files themselves — see **Session continuity**
+under the work sub-command. A fresh session resumes from `.work-state`; no
+restart machinery.)
 
 The file is:
 - Created when `/todo work` begins a task
@@ -134,11 +155,12 @@ The file is:
 Completed task files have these sections in order:
 1. `## Context` — why the task exists
 2. `## Key Files` — relevant source files
-3. `## Acceptance Criteria` — checkbox items
-4. `## Verify Plan` — verification checklist (generated by fresh subagent, Phase 3a)
-5. `## Work Report` — executor's completion summary (Phase 3b)
-6. `## Verify Report` — executor's verification results (Phase 3c)
-7. `## Human Validation` — human-facing checklist (generated by fresh subagent, Phase 3d)
+3. `## Constraints` / `## Verification recipe` — optional brief sections (see template)
+4. `## Acceptance Criteria` — checkbox items
+5. `## Work Report` — executor's completion summary (Phase 2)
+6. `## Verify Plan` — verification checklist (fresh verifier subagent, Phase 3)
+7. `## Verify Report` — the verifier's results (Phase 3)
+8. `## Human Validation` — human-facing checklist (fresh subagent, Phase 3b)
 
 ## Work Report Section
 
@@ -187,10 +209,10 @@ Before routing, check if `.agents/TODO/.work-state` exists. If it does:
 3. **Update PID:** If resuming, overwrite the `pid:` field with the current `$PPID` to claim ownership.
 4. Inform the user: "Resuming work on {task} ({phase} phase, {mode} mode)"
 5. Continue from the saved phase:
-   - If `phase: planning` → continue with plan mode exploration
-   - If `phase: executing` → re-read the plan file and continue execution
-   - If `phase: verify` → check which verify sub-phases (3a–3d) are done by looking for existing sections (`## Verify Plan`, `## Work Report`, `## Verify Report`, `## Human Validation`), then resume from the first missing one
-   - If `phase: complete` → mark done, lint, commit
+   - If `phase: briefing` → continue the brief-readiness pass (Phase 1)
+   - If `phase: executing` → the executor subagent is gone with the session; check the task file and `git log` for partial work (committed work survives), then re-dispatch a fresh executor with the brief plus a note of what already landed. In `--inline` mode: re-read the plan/brief and continue implementing.
+   - If `phase: verifying` → check which sections exist (`## Work Report`, `## Verify Plan`, `## Verify Report`, `## Human Validation`), then resume from the first missing step (re-dispatch the verifier or validation subagent as needed)
+   - If `phase: complete` → mark done, lint, commit, update REVIEW-QUEUE.md
 6. Do NOT start fresh or re-pick a task — resume the exact task from the state file
 
 This ensures work survives context compaction while preventing accidental takeover of another instance's work.
@@ -331,8 +353,8 @@ Parse remaining arguments after `work`:
 - `picker` → Show top 5, user picks, then execute
 - `loop` → Execute tasks continuously, **batch by batch in ascending batch order** (see Batch ordering model). Batch is the primary execution axis: the loop exhausts the lowest-numbered batch's eligible tasks before moving to the next.
 - `P0`-`P5` → Execute all tasks of that priority until done, **across all batches** (priority mode ignores batch ordering — use it for cross-batch urgency sweeps)
-- `--batches {list}` → Ordered, comma-separated batch numbers scoping + sequencing the loop. Example: `work loop --batches 8,11,12` runs all of batch 8, then 11, then 12 (each in-batch order), and ignores every other batch. Persisted in `.work-state` as `batches:` so the order survives context clears. Without this flag, `loop` uses ascending batch order over all batches.
-- `--auto-clear` → Flag (combinable with `loop`, `--batches`, or priority modes). Restarts Claude between **every task** for a fresh context window. When set, write `auto-clear: true` to `.work-state`. Example: `work loop --batches 8,11,12 --auto-clear`. (Clearing only between batches rather than every task is intentionally not supported yet.)
+- `--batches {list}` → Ordered, comma-separated batch numbers scoping + sequencing the loop. Example: `work loop --batches 8,11,12` runs all of batch 8, then 11, then 12 (each in-batch order), and ignores every other batch. Persisted in `.work-state` as `batches:` so the order survives session boundaries. Without this flag, `loop` uses ascending batch order over all batches.
+- `--inline` → Flag (combinable with any mode). The orchestrating session executes tasks itself instead of dispatching executor subagents — for interactive work, debugging sessions, or judgment-dense tasks. Inline execution uses plan mode (`EnterPlanMode`/`ExitPlanMode`) for user plan approval; dispatched execution does not (picking the batch IS the approval — the brief was written to be executed).
 - `--filter tags:{tag}` → Further restrict the work loop to tasks matching the filter (orthogonal to `--batches`; both can combine). Persisted in `.work-state` so the filter survives context clears. Supports inclusion and exclusion:
   - `tags:{tag}` — include only tasks whose `tags` array includes `{tag}`. Example: `work loop --filter tags:assessment`.
   - `tags:!{tag}` — exclude tasks whose `tags` array includes `{tag}`. Example: `work loop --filter tags:!meta-design`.
@@ -389,30 +411,43 @@ The work state file (`.agents/TODO/.work-state`) tracks progress across context 
 - **Cleared** when task completes (delete file if mode is single, otherwise update task to next)
 - **Read** on any `/todo` invocation to check for resume
 
-### Execute logic — 4-Phase State Machine
+### Execute logic — Orchestrated State Machine
 
-Every task goes through **plan → execute → verify → complete**. No exceptions.
+The session running `/todo work` is the **orchestrator**: it briefs, dispatches,
+validates, and completes — it does not implement (unless `--inline`).
+Implementation runs in **executor subagents** (fresh context, model chosen per
+task), verification in a **fresh verifier subagent**. This keeps the
+orchestrator's context at orchestration altitude across many tasks, puts the
+token-heavy work on the model tier the task warrants, and preserves the
+fresh-eyes property for verification.
+
+Every task goes through **brief → execute → verify → complete**. No exceptions.
 
 ```
-planning → executing → verify → complete → (pick next or done)
+briefing → executing → verifying → complete → (pick next or done)
 ```
 
-| Phase | Purpose | On Resume |
-|-------|---------|-----------|
-| `planning` | Explore codebase, write plan, ExitPlanMode | Continue exploring/planning |
-| `executing` | Implement the plan | Re-read plan, continue implementing |
-| `verify` | Run verify checks, fix failures | Read Verify Plan, continue checking |
-| `complete` | Mark done, lint, commit | Finish completion |
+| Phase | Purpose | Runs in |
+|-------|---------|---------|
+| `briefing` | Confirm the task file is executor-ready; enrich if thin | orchestrator |
+| `executing` | Implement the brief, commit, work report | executor subagent (task's `model`) — or the orchestrator itself with `--inline` |
+| `verifying` | Fresh-eyes verify plan + execution + report; rework loop; human-validation section | verifier subagent + validation subagent, orchestrator adjudicates |
+| `complete` | Independent spot-check, mark done, lint, commit, REVIEW-QUEUE | orchestrator |
 
 Each phase transition: update `.work-state` **before** starting the new phase.
 
-#### Phase 1: Plan
+**Sequential, in place.** One executor at a time, working the live tree — the
+project's running deployment is the standing invariant, and it only means
+something if there is one tree it runs from. Parallel dispatch is allowed only
+for provably disjoint tasks with the user's explicit go-ahead, via worktrees.
 
-1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: planning`, timestamp, `pid: $PPID` (the Claude Code process PID, for instance scoping), `auto-clear: true` if `--auto-clear` was passed, and `filter: {value}` if `--filter` was passed
+#### Phase 1: Brief
+
+1. **Write state file:** Create `.agents/TODO/.work-state` with mode, task slug, `phase: briefing`, timestamp, `pid: $PPID` (the Claude Code process PID, for instance scoping), `inline: true` if `--inline` was passed, and `filter: {value}` if `--filter` was passed
 2. Update task `status: in-progress`, `updated` to the current timestamp (`date +%Y-%m-%d_%H:%M`)
-3. Read the full task file body — it IS the agent prompt
-4. Use `EnterPlanMode` to enter plan mode
-5. **Scope-vs-context check (self-discovery nudge).** Skim the task body and `## Read first` together and ask: *does the surfaced context match the implied scope?* If the task body mentions multiple files / multiple components / integration with another system / a refactor across a layer, but `## Read first` is empty or lists only 1–2 references, do additional discovery **before** writing the plan:
+3. Read the full task file body — it IS the executor's prompt. Judge dispatch-readiness: does it carry everything a zero-context agent needs (exact paths, resolved decisions, scope fences, a verification recipe)? If not, run the discovery below and **enrich the task file itself** (not a separate plan file) until it does; unresolved judgment calls either get resolved here by the orchestrator or the task flips to `model: inline`.
+4. *(--inline only)* Use `EnterPlanMode` to enter plan mode; the inline flow keeps interactive plan approval.
+5. **Scope-vs-context check (self-discovery nudge).** Skim the task body and `## Read first` together and ask: *does the surfaced context match the implied scope?* If the task body mentions multiple files / multiple components / integration with another system / a refactor across a layer, but `## Read first` is empty or lists only 1–2 references, do additional discovery **before** dispatching:
    - `grep`/Glob for the symbols, file patterns, or component names the task names.
    - Read sibling/parent tasks (`depends-on`, related slugs in the body) — they often carry context the current task assumes.
    - Search `~/.claude/projects/<project-slug>/memory/` for relevant patterns or feedback memories.
@@ -426,112 +461,112 @@ Each phase transition: update `.work-state` **before** starting the new phase.
    The cost of an extra grep is low. The cost of a plan that misses a caller is a re-do. Lean toward discovery.
 
    **Worked example.** Task says "rename `dispatch` to `activation` everywhere and update the workflow runner to use the new name." `## Read first` lists only `packages/core/src/runner.ts`. Before planning: `grep -rn "dispatch" packages/ apps/` to find every reference; read the workflow YAML schema files; read the runner's call sites. Now the plan can enumerate the rename surface accurately. Without the nudge, the plan would scope to `runner.ts`, miss the YAML schema + UI labels + DB column, and produce a half-done rename.
-6. Explore the codebase to understand the relevant code, architecture, and constraints. **If the task references any external thing (package, vendor product, GitHub repo, paper, framework, concept) whose authoritative source isn't already in `## Read first`, fetch the vendor docs before planning — see [External Information Discipline](#external-information-discipline) above. Do not start a plan from "I don't know what this is" or "it's probably missing"; resolve it first.**
-7. Write an implementation plan addressing each item in the Acceptance Criteria
-   **IMPORTANT:** Start the plan file with `# Plan: {task-slug}` as the H1 heading, where `{task-slug}` is the **exact value** of the `task:` field in `.agents/TODO/.work-state` (which matches the task filename without `.md`). For example, if `.work-state` has `task: 01-1c-14-memory-distiller-vision`, the heading must be `# Plan: 01-1c-14-memory-distiller-vision` — do not strip numeric or category prefixes. The auto-approve hook does a literal match against this value, so any mismatch will force a manual approval prompt.
-8. Use `ExitPlanMode` to present the plan for user approval
+6. Explore as needed to judge the brief, and land what discovery finds **into the task file's sections** (`## Read first`, `## Constraints`, `## Verification recipe`). **If the task references any external thing (package, vendor product, GitHub repo, paper, framework, concept) whose authoritative source isn't already in `## Read first`, fetch the vendor docs before dispatching — see [External Information Discipline](#external-information-discipline) above. Do not dispatch a brief containing "I don't know what this is" or "it's probably missing"; resolve it first.**
+7. *(--inline only)* Write an implementation plan addressing each item in the Acceptance Criteria.
+   **IMPORTANT:** Start the plan file with `# Plan: {task-slug}` as the H1 heading, where `{task-slug}` is the **exact value** of the `task:` field in `.agents/TODO/.work-state` (which matches the task filename without `.md`). The auto-approve hook does a literal match against this value, so any mismatch will force a manual approval prompt.
+8. *(--inline only)* Use `ExitPlanMode` to present the plan for user approval. (Dispatched tasks skip plan approval: the batch pick is the approval, and the enriched brief is the plan.)
 
-#### Phase 2: Execute
+#### Phase 2: Execute (dispatched — or inline)
 
 9. **Update state file:** Set `phase: executing`
-10. After the user approves, re-read the plan file to have a clean reference (exploration context will have been summarized)
-11. Execute the plan, following the Acceptance Criteria as your checklist. **As you complete each criterion, update the task file to check it off** (`- [ ]` → `- [x]`).
-12. **Code commit discipline:** Commit after each logical unit of work — a completed function, a fixed bug, a batch of related changes. Never leave uncommitted code work.
-    - **Code commits only contain project source files.** Never mix in `.agents/TODO/` files.
-    - **Record each code commit hash** in the task file's `commits` frontmatter field (short hash, e.g. `abc1234`). Update the list after each commit.
+10. **Task tracking commit:** Commit the task file's status flip and any brief enrichment (`.agents/TODO/` files only, `[todo]` prefix) — the brief must be durable before dispatch.
+11. **Dispatch the executor.** Spawn a `general-purpose` subagent with the task's `model` (default `opus`):
+    ```
+    Read ~/.claude/skills/todo/execute-agent.md and execute the task file at:
+    .agents/TODO/{slug}.md
+    ```
+    The executor implements the brief, commits incrementally (code-only commits, hashes recorded in the task's `commits` frontmatter), checks acceptance criteria off as they land, and appends the `## Work Report`. It returns one of: **completed** (with a summary), **blocked** (with the named question — nothing speculative built), or **failed** (with diagnosis). Executors never mark tasks done, never touch other tasks, never push.
+12. **On return:**
+    - *completed* → proceed to Phase 3.
+    - *blocked* → resolve the question if it's within the orchestrator's remit (update the brief, re-dispatch); escalate to the user if it's genuinely theirs. Record the resolution in the task file.
+    - *failed* → read the diagnosis; either fix the brief and re-dispatch fresh, or take the task over `--inline` if it needs orchestrator-grade judgment. Two failed dispatches on one task = stop and escalate; don't burn a third.
+
+    *(--inline instead: after the user approves the plan, the orchestrator executes it itself — same commit discipline, same criteria check-off, same Work Report.)*
 
 #### Execution Quality Principles
 
-These principles guide HOW you execute, not just WHAT you execute:
+These principles bind whoever executes — a dispatched executor (they are
+restated in `execute-agent.md`) or the orchestrator inline:
 
 - **Fidelity:** The implementation should accurately represent what it does. Interfaces match their semantics (reads are GETs, mutations are POSTs). Uncertainty is displayed, not hidden (tooltips on computed metrics, error bars on averaged quantities). When two approaches have comparable effort, prefer the more correct one.
 - **Completeness:** When implementing a pattern or fix, apply it everywhere it's relevant — not just the first location. A change that works in the compare view but not the run detail view is incomplete. Before transitioning to verify, scan the codebase for other locations where the same treatment should apply. Either include them or explicitly justify their exclusion in the work report.
 - **Parsimony:** Implement exactly what's needed. No speculative features, no backwards-compatibility shims for pre-prototype code, no abstractions without concrete consumers. But also no half-measures that technically satisfy a criterion without solving the actual problem — if the useful thing is X and you can only deliver X/2, flag it for discussion rather than shipping something useless.
 
-#### Phase 3a: Verify Plan (fresh subagent)
+#### Phase 3: Verify (fresh verifier subagent, rework loop)
 
-Generate the verify plan using a **fresh subagent** (separate reasoning context — avoids the executor's blind spots about what to test).
+Verification runs in a **fresh subagent** — separate reasoning context, so the
+executor's blind spots about what to test don't carry into what gets tested.
+One subagent both writes the verify plan and executes it (freshness lives in
+the separate context, not in splitting plan from execution).
 
-13. **Update state file:** Set `phase: verify`
-14. **Task tracking commit:** Commit the task file status change to in-progress (`.agents/TODO/` files only, prefix message with `[todo]`)
-15. **Spawn a `general-purpose` subagent** with `model: "opus"`:
+13. **Update state file:** Set `phase: verifying`
+14. **Spawn a `general-purpose` verifier subagent** with `model: "opus"` (`sonnet` for mechanical tasks):
     ```
-    Read ~/.claude/skills/todo/verify-agent.md and generate the verify plan
-    for the task file at: .agents/TODO/{slug}.md
+    Read ~/.claude/skills/todo/verify-agent.md and verify the task at:
+    .agents/TODO/{slug}.md
     ```
-    The subagent reads the task file (acceptance criteria, changed files, code) and appends a `## Verify Plan` section with concrete, actionable check items.
-
-#### Phase 3b: Work Report (executor)
-
-Write the work report while execution context is still fresh, before verification begins.
-
-16. **Work report:** Append a `## Work Report` section to the task file documenting:
-    - **What was done:** Summary of changes made
-    - **How it was done:** Technical approach, tools/patterns used
-    - **Decisions made:** Any non-obvious choices and their reasoning
-    - **Files changed:** List of key files created/modified
-    - **Sources Consulted:** Which coding standards files from `~/.claude/coding-standards/` were read (if any)
-    - **Follow-up:** Any discovered work that should become new tasks (create them)
-
-#### Phase 3c: Verify Execute (executor)
-
-The executor runs the checks from the verify plan and fixes any failures.
-
-17. Read the `## Verify Plan` section from the task file
-18. **Execute each item**, checking them off as they pass. For Playwright verification:
-    - Determine the dev server URL from `package.json` scripts (e.g., `--port 3040` → `http://localhost:3040`)
+    The verifier reads the task file (acceptance criteria, verification recipe, work report), inspects the actual diff (`git show` on the recorded commits), appends a `## Verify Plan`, executes every item — including live checks:
+    - Determine the dev server URL from `package.json` scripts or project config
     - Use `browser_navigate` to open the relevant page — **always attempt this before marking any Playwright check as skipped**
     - Use `browser_snapshot` to capture the accessibility tree
     - **Actually interact with the feature** — click buttons, fill forms, trigger the behavior
     - Use `browser_take_screenshot` for visual evidence
     - Check `browser_console_messages` for errors and `browser_network_requests` for failed API calls
-19. **Append `## Verify Report`** documenting results (checked items with evidence)
-20. If any items fail → fix the issue, commit the fix (code-only commit), re-verify failed items only
-21. Reset retry counter (`.claude/todo-loop-retries`) on successful verification
+    — and appends a `## Verify Report` (checked items with evidence, failures with precise repro).
+15. **Rework loop (orchestrator adjudicates):** on failures, re-dispatch the executor with the failure items appended to the brief; then re-verify the failed items (fresh verifier or the same one resumed). Bound: two rework rounds, then stop and escalate to the user with both reports.
+16. Reset retry counter (`.claude/todo-loop-retries`) on successful verification
 
-#### Phase 3d: Human Validation (fresh subagent, conditional)
+#### Phase 3b: Human Validation (fresh subagent, conditional)
 
 After agent verification passes, generate a human validation checklist — **only if the task warrants it.** Many purely technical tasks (refactors, bug fixes, backend logic) are fully agent-verifiable and should skip human validation.
 
-22. **Spawn a `general-purpose` subagent** with `model: "opus"`:
+17. **Spawn a `general-purpose` subagent** with `model: "opus"`:
     ```
     Read ~/.claude/skills/todo/validate-agent.md and generate the human validation section
     for the task file at: .agents/TODO/{slug}.md
     ```
-    The subagent decides whether human validation adds value. If all verification is agent-automatable, it appends a brief skip notice. Otherwise it appends 1-3 focused checks (up to 5 for complex tasks) targeting only things agents cannot assess: subjective UX judgment, production-environment behavior, business logic decisions, or design tradeoffs.
+    The subagent decides whether human validation adds value. If all verification is agent-automatable, it appends a brief skip notice. Otherwise it appends 1-3 focused checks (up to 5 for complex tasks) targeting only things agents cannot assess: subjective UX judgment, production-environment behavior, business logic decisions, or design tradeoffs. When checks are appended, set `human-validation: pending` in the task frontmatter.
 
-#### Phase 4: Complete
+#### Phase 4: Complete (orchestrator)
 
-23. **Update state file:** Set `phase: complete`
-24. Set `status: done`, `updated` to the current timestamp (`date +%Y-%m-%d_%H:%M`) in the task file frontmatter
-25. **Notify completion:** Send OS notification via Bash:
+18. **Orchestrator acceptance.** Read the Work Report and Verify Report and the diff stat; independently spot-check one or two load-bearing claims against the running system (a curl, a page load — cheap, not a re-verification). The orchestrator is the last set of eyes before the task flips done; a report that doesn't hold up goes back through the rework loop, not into `done`.
+19. **Update state file:** Set `phase: complete`
+20. Set `status: done`, `updated` to the current timestamp (`date +%Y-%m-%d_%H:%M`) in the task file frontmatter
+21. **Notify completion:** Send OS notification via Bash:
     ```bash
     notify-send -u normal "TODO Task Completed" "Finished: {task-slug}" -t 5000
     ```
     (On macOS use `osascript -e 'display notification "Finished: {task-slug}" with title "TODO Task Completed"'`)
-26. Run the **lint** procedure to sync INDEX.md
-27. **Task tracking commit:** Commit all `.agents/TODO/` changes (work report, human validation, verify plan/report, status, INDEX.md) with `[todo]` prefix
-28. **Update state file:**
+22. **Update `REVIEW-QUEUE.md`:** if the task carries `human-validation: pending`, add a line to `.agents/TODO/REVIEW-QUEUE.md` — `- [ ] [{slug}]({path}) — {one-line what-to-look-at}`. This file is the user's single review surface; they check items off (or tell the orchestrator, which flips `human-validation: done` and removes the line).
+23. Run the **lint** procedure to sync INDEX.md
+24. **Task tracking commit:** Commit all `.agents/TODO/` changes (work report, verify plan/report, human validation, status, INDEX.md, REVIEW-QUEUE.md) with `[todo]` prefix
+25. **Update state file:**
     - If mode is `single`: delete `.agents/TODO/.work-state`
-    - If mode is `loop` or priority (`P0`, `P1`, etc.) **without `auto-clear`**: clear task field, pick next eligible task (respecting `batches` order and `filter` if set), continue to step 29
-    - If mode is `loop` or priority **with `auto-clear: true`** AND there are more eligible tasks:
-      1. Pick next eligible task (respecting `batches` order and `filter` if set)
-      2. Write `.agents/TODO/.work-state` with: the new task slug, `phase: planning`, updated `pid: $PPID`, `auto-clear: true`, `batches: {value}` and `filter: {value}` (each preserved from current state if set), and `clear-pending: true`
-      3. **STOP IMMEDIATELY.** Do not begin planning. Do not read any files. Do not output anything further. The PostToolUse hook will detect `clear-pending: true`, kill this Claude process, and relaunch with fresh context. The new instance will pick up the next task via the auto-start SessionStart hook.
-    - If no more eligible tasks (any mode): delete state file and report summary (no restart)
-29. In loop/priority modes (without `auto-clear`): repeat pick → plan → execute → verify → complete until no eligible tasks remain (respecting batch order, priority, and tag filters if set), then report summary
+    - If mode is `loop` or priority (`P0`, `P1`, etc.): clear task field, pick next eligible task (respecting `batches` order and `filter` if set), and repeat brief → execute → verify → complete until no eligible tasks remain; then delete the state file and report a summary (tasks completed, review-queue additions, anything escalated)
+
+### Session continuity (no auto-clear)
+
+The orchestrator's context grows slowly (briefs, reports, adjudication — not
+implementation), but it does grow. **At roughly 85% context usage, finish the
+task in flight, then stop cleanly**: leave `.work-state` pointing at the next
+picked task in `phase: briefing`, report the stopping point, and tell the user
+to start a fresh session with `/todo work` — the Resume Check picks it up with
+nothing lost, because every piece of durable state lives in the task files,
+`.work-state`, INDEX.md, and REVIEW-QUEUE.md, all committed. There is no
+restart machinery and no context-clear hook; continuity is a property of the
+files.
 
 ### Git Commit Discipline
 
 Two separate commit streams throughout the work lifecycle:
 
-**Code commits:** Only project source files. Concise messages explaining *why*. Stage specific files.
-**Task tracking commits:** Only `.agents/TODO/` files. Prefix with `[todo]`. Status changes, work reports, verify reports, INDEX.md.
+**Code commits:** Only project source files. Concise messages explaining *why*. Stage specific files. Made by whoever executes (the dispatched executor, or the orchestrator inline).
+**Task tracking commits:** Only `.agents/TODO/` files. Prefix with `[todo]`. Status changes, work reports, verify reports, INDEX.md, REVIEW-QUEUE.md. Made by the orchestrator (the executor appends its sections to the task file; the orchestrator commits them).
 
 **Phase transitions:**
-- **Enter executing:** Code commit any prior work. Task tracking commit: task status → in-progress.
-- **Enter verify:** Code commit all implementation work. Task tracking commit: verify plan appended.
-- **Enter complete:** Code commit any verify-phase fixes. Task tracking commit: work report, verify report, human validation, status → done, INDEX.md regenerated.
+- **Enter executing (dispatch):** Task tracking commit: status → in-progress + brief enrichment.
+- **Enter verifying:** All implementation work is code-committed by the executor before it returns. Task tracking commit: work report appended.
+- **Enter complete:** Code commit any rework fixes (executor). Task tracking commit: verify plan/report, human validation, status → done, INDEX.md, REVIEW-QUEUE.md.
 
 ### Pre-commit Verification
 
