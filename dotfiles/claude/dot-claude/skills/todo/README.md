@@ -70,6 +70,8 @@ The body contains `## Context`, `## Key Files`, and `## Acceptance Criteria` sec
 ```
 .agents/TODO/
 ├── INDEX.md                     # Auto-generated dashboard
+├── REVIEW-QUEUE.md              # The user's single review surface (committed)
+├── CONTINUATION.md              # Continuation ledger — the deal + narrative (committed)
 ├── .work-state                  # Active work session (gitignored)
 ├── .focus                       # Current focus task (gitignored)
 ├── {slug}.md                    # Active tasks
@@ -130,10 +132,13 @@ briefing → executing → verifying → complete
 
 ### Continuity (no restart machinery)
 
-The `.work-state` file tracks the current task and phase; every durable fact
+The `.work-state` file tracks the current task and phase; `CONTINUATION.md` —
+the **continuation ledger** — carries the standing agreements, disciplines in
+force, and loop narrative that a bare resume pointer cannot. Every durable fact
 lives in committed files. If a session ends mid-work — or stops deliberately
 because the orchestrator's context is near capacity — the next `/todo`
-invocation resumes exactly where it left off. The old auto-clear restart hack
+invocation resumes exactly where it left off: read the ledger first for *the
+deal*, then `.work-state` for *the place*. The old auto-clear restart hack
 is retired.
 
 ## Creating Tasks

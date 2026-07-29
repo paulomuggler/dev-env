@@ -125,6 +125,7 @@ inline: true        # optional — orchestrator executes tasks itself (--inline)
 filter: tags:assessment  # optional — restrict pick logic to matching tasks
 batches: [8, 11, 12]     # optional — ordered batch sequence for the loop (from --batches)
 branch-acknowledged: eval/foo  # optional — user confirmed work on this non-main branch
+ledger: CONTINUATION.md  # optional — pointer to the continuation ledger; READ IT FIRST on resume
 ```
 
 | Field | Description |
@@ -138,6 +139,7 @@ branch-acknowledged: eval/foo  # optional — user confirmed work on this non-ma
 | `filter` | Optional. Restricts pick logic to matching tasks. Format: `tags:{tag}` (tasks must have the tag). Persists across context clears so the loop stays scoped. Set by `--filter` flag. |
 | `batches` | Optional. Ordered list of batch numbers scoping + sequencing the loop (e.g. `[8, 11, 12]`). Persists across session boundaries so batch order survives a stop-and-resume. Set by `--batches` flag. |
 | `branch-acknowledged` | Optional. Branch name the user confirmed working on after a Branch Sanity Check warning. Suppresses re-prompts within the same `.work-state` lifetime. Cleared when work-state is deleted or `git checkout` switches branches. |
+| `ledger` | Optional. Path (relative to `.agents/TODO/`) of the [Continuation Ledger](#continuation-ledger). Its presence is a reminder to read the ledger **before** this file — `.work-state` is the resume *pointer*, the ledger is the resume *context*. |
 
 (`auto-clear` / `clear-pending` are retired: continuity across context limits is
 carried by this file plus the task files themselves — see **Session continuity**
@@ -199,7 +201,14 @@ When a task is completed, a `## Work Report` section is appended. Format:
 
 ## Resume Check (ALWAYS DO THIS FIRST)
 
-Before routing, check if `.agents/TODO/.work-state` exists. If it does:
+**Step 0 — read the continuation ledger.** If a ledger exists, read it **before**
+`.work-state` — at `.agents/TODO/CONTINUATION.md`, or at whatever path `.work-state`'s
+`ledger:` field names if it is set and differs. `.work-state` tells you *where* you are; the ledger tells you *the
+deal* — standing agreements, disciplines in force, routed decisions, and the loop narrative
+(see [Continuation Ledger](#continuation-ledger)). Reading it first is what stops a cold
+context from re-litigating a settled agreement or blowing past a banked scope note.
+
+Then, check if `.agents/TODO/.work-state` exists. If it does:
 
 1. Read the file to get the current work state
 2. **Check PID ownership:** Read `pid:` from the file and compare with current `$PPID`:
@@ -302,13 +311,37 @@ For anything not listed (checking status, marking done, updating fields, etc.) �
 
 Validate all task files, regenerate INDEX.md, and auto-archive old done tasks.
 
-**Always runs as a haiku subagent.** Spawn a `general-purpose` subagent with `model: "haiku"`:
+**Runs as a deterministic script** (changed 2026-07-30 — the agent tier is retired):
 
-```
-Read ~/.claude/skills/todo/lint-agent.md and execute the lint procedure on .agents/TODO/
+```bash
+node ~/.claude/skills/todo/lint.mjs            # execute (moves, archive, INDEX regen, self-check)
+node ~/.claude/skills/todo/lint.mjs --dry-run  # report what would change, touch nothing
 ```
 
-The full procedure and INDEX.md format live in `lint-agent.md` (single source of truth).
+The script implements the full `lint-agent.md` procedure — status-directory
+moves via atomic `git mv`, the guarded archive sweep (never archives anything
+with an open REVIEW-QUEUE line, including directory links, or
+`human-validation: pending`), INDEX.md regeneration keyed on actual frontmatter
+status with counts derived from emitted rows, REVIEW-QUEUE link rewriting for
+moved files, and a self-check (link resolution, status enum, clean renames).
+It exits non-zero with an error list if any self-check fails, and it does NOT
+commit — review its report, then commit with the anchored pathspec it prints:
+
+```bash
+git add -A ':(top).agents/TODO' && git commit -m "[todo] Lint: ..."
+git status --short   # confirm clean afterwards
+```
+
+**Why a script, not a model** (history: haiku produced four distinct
+bookkeeping corruptions in one session; sonnet was reliable but cost ~100k
+tokens and 3-10 minutes per run, plus a mandatory orchestrator verification
+pass — for work that is a pure function of frontmatter + file layout).
+`lint-agent.md` remains as the procedure's specification and the fallback for
+repair scenarios the script refuses (its error list names what needs judgment
+— fix by hand or dispatch a subagent with `lint-agent.md` for that case only).
+
+After a run, spot-check remains cheap and still worthwhile after ANY tooling
+change: INDEX links resolve + an in-flight task still reads `in-progress`.
 
 ---
 
@@ -377,7 +410,7 @@ Work is organized into **batches** (a related feature/effort), executed sequenti
 
 ### Pick logic
 
-1. Glob `.agents/TODO/*.md` (exclude INDEX.md) and read **frontmatter only** from each file
+1. Glob `.agents/TODO/*.md` (exclude the non-task files: `INDEX.md`, `REVIEW-QUEUE.md`, `CONTINUATION.md`) and read **frontmatter only** from each file
 2. Filter to `status: pending` where ALL `depends-on` slugs have `status: done` (check active, `done/`, and `backlog/` directories). Tasks with `status: backlog` are never picked.
 3. If priority mode is set (e.g., `work P0`), additionally filter to matching priority. **Priority mode bypasses batch ordering** — it sweeps the matching priority across all batches (sort by `created`, oldest first) and skips to step 7.
 4. If `--batches {list}` is set (or `batches:` in `.work-state` during resume), keep only tasks whose derived batch (see Batch ordering model) is in the list.
@@ -538,9 +571,10 @@ After agent verification passes, generate a human validation checklist — **onl
     ```
     (On macOS use `osascript -e 'display notification "Finished: {task-slug}" with title "TODO Task Completed"'`)
 22. **Update `REVIEW-QUEUE.md`:** if the task carries `human-validation: pending`, add a line to `.agents/TODO/REVIEW-QUEUE.md` — `- [ ] [{slug}]({path}) — {one-line what-to-look-at}`. This file is the user's single review surface; they check items off (or tell the orchestrator, which flips `human-validation: done` and removes the line).
-23. Run the **lint** procedure to sync INDEX.md
-24. **Task tracking commit:** Commit all `.agents/TODO/` changes (work report, verify plan/report, human validation, status, INDEX.md, REVIEW-QUEUE.md) with `[todo]` prefix
-25. **Update state file:**
+23. **Update the [Continuation Ledger](#continuation-ledger)** (`.agents/TODO/CONTINUATION.md`) if present: move the finished task into *Session progress*, set the resume point + next picks in *Current loop state*, add any discipline this task taught to *Disciplines in force*, record anything routed to review, and refresh the `**Last updated:**` line. This is the transition where the ledger earns its keep — skipping it here is what makes a ledger lag and lie.
+24. Run the **lint** procedure to sync INDEX.md
+25. **Task tracking commit:** Commit all `.agents/TODO/` changes (work report, verify plan/report, human validation, status, INDEX.md, REVIEW-QUEUE.md, CONTINUATION.md) with `[todo]` prefix
+26. **Update state file:**
     - If mode is `single`: delete `.agents/TODO/.work-state`
     - If mode is `loop` or priority (`P0`, `P1`, etc.): clear task field, pick next eligible task (respecting `batches` order and `filter` if set), and repeat brief → execute → verify → complete until no eligible tasks remain; then delete the state file and report a summary (tasks completed, review-queue additions, anything escalated)
 
@@ -552,21 +586,86 @@ task in flight, then stop cleanly**: leave `.work-state` pointing at the next
 picked task in `phase: briefing`, report the stopping point, and tell the user
 to start a fresh session with `/todo work` — the Resume Check picks it up with
 nothing lost, because every piece of durable state lives in the task files,
-`.work-state`, INDEX.md, and REVIEW-QUEUE.md, all committed. There is no
-restart machinery and no context-clear hook; continuity is a property of the
-files.
+`.work-state`, INDEX.md, REVIEW-QUEUE.md, and `CONTINUATION.md`, all committed.
+There is no restart machinery and no context-clear hook; continuity is a
+property of the files.
+
+**Check the actual number before stopping.** Stopping "because context feels
+long" wastes a usable session — run `/context` (or whatever the harness exposes)
+and stop on the measurement, not the feeling.
+
+The four continuity artifacts divide as follows — each answers a different
+question, and none substitutes for another:
+
+| Artifact | Answers | Lifetime |
+|----------|---------|----------|
+| `.work-state` | *Where am I?* — task + phase + owning pid. Mechanical only. | Deleted when the loop ends |
+| `CONTINUATION.md` | *What's the deal?* — standing agreements, disciplines, routed decisions, narrative | Durable, committed |
+| `INDEX.md` | *What's left?* | Regenerated by lint |
+| `REVIEW-QUEUE.md` | *What's waiting on the user?* | Durable, committed |
+
+### Continuation Ledger
+
+`.agents/TODO/CONTINUATION.md` is the loop's durable memory. `.work-state` is a
+bare resume pointer: it cannot tell a fresh context that the user deferred all
+review to the end of the queue, that a task was routed rather than skipped, or
+that a discipline was learned the hard way three tasks ago. The ledger carries
+exactly that.
+
+**Committed, not gitignored** (unlike `.work-state`). It is the session's
+durable memory and belongs in history, in the `[todo]` commit stream.
+
+**Schema** — keep these sections, in this order:
+
+```markdown
+# Continuation Ledger
+> Read this FIRST after a /clear or in a fresh session, before .work-state.
+
+## How to resume            — the ordered steps for a cold context
+## Standing agreements      — the deal with the user; do NOT re-litigate
+## Disciplines in force     — lessons learned this run, stated as rules
+## Current loop state       — mode, resume point, routed/blocked items, next picks
+## Session progress         — rolling: completed / closed / backlogged / filed
+## Open threads             — what's waiting on the user
+**Last updated:** <timestamp> — <one line on where things stand>
+```
+
+**Maintenance cadence.** Update the ledger at **every task transition and every
+summary** — the same cadence as `.work-state` phase bumps. A ledger that lags
+is worse than none: it will be trusted and be wrong.
+
+**What goes in each section — and the distinction that matters most:**
+
+- **Standing agreements** are *decisions the user made*. They are durable and a
+  fresh context must not reopen them.
+- **Disciplines in force** are *rules learned this run*. Also durable.
+- **Banked technical claims** — "the transport doesn't exist", "this premise is
+  wrong", "scope corrected" — are **facts, and facts rot**. Record them, but
+  never mark them beyond question.
+
+> **The ledger's failure mode, learned in its own trial run:** a prior
+> orchestrator banked a scope correction marked *"do not relitigate"*. A later
+> session read it, trusted it, and nearly dispatched on it — both of its
+> load-bearing premises turned out to be false, and a settled spec already
+> answered the question it was re-deriving. **"Do not relitigate" protects
+> decisions, not facts.** Spot-check the load-bearing facts of any banked note
+> before acting on it, however authoritative it sounds. Write banked findings
+> so a later reader knows which kind they are.
+
+**Don't duplicate.** The ledger points at task files and REVIEW-QUEUE entries;
+it does not restate their content. Its job is orientation, not storage.
 
 ### Git Commit Discipline
 
 Two separate commit streams throughout the work lifecycle:
 
 **Code commits:** Only project source files. Concise messages explaining *why*. Stage specific files. Made by whoever executes (the dispatched executor, or the orchestrator inline).
-**Task tracking commits:** Only `.agents/TODO/` files. Prefix with `[todo]`. Status changes, work reports, verify reports, INDEX.md, REVIEW-QUEUE.md. Made by the orchestrator (the executor appends its sections to the task file; the orchestrator commits them).
+**Task tracking commits:** Only `.agents/TODO/` files. Prefix with `[todo]`. Status changes, work reports, verify reports, INDEX.md, REVIEW-QUEUE.md, CONTINUATION.md. Made by the orchestrator (the executor appends its sections to the task file; the orchestrator commits them).
 
 **Phase transitions:**
 - **Enter executing (dispatch):** Task tracking commit: status → in-progress + brief enrichment.
 - **Enter verifying:** All implementation work is code-committed by the executor before it returns. Task tracking commit: work report appended.
-- **Enter complete:** Code commit any rework fixes (executor). Task tracking commit: verify plan/report, human validation, status → done, INDEX.md, REVIEW-QUEUE.md.
+- **Enter complete:** Code commit any rework fixes (executor). Task tracking commit: verify plan/report, human validation, status → done, INDEX.md, REVIEW-QUEUE.md, CONTINUATION.md.
 
 ### Pre-commit Verification
 

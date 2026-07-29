@@ -27,16 +27,33 @@ From the task file:
 
 **Most tasks do NOT need human validation.** The verify plan + verify report already covers agent-automatable checks (code inspection, commands, tests, API calls, linting, typechecking).
 
-Human validation is only valuable when the task involves something an agent **cannot** assess:
+Human validation is only valuable when the task involves something an agent **cannot** assess.
 
-| Needs human validation | Does NOT need human validation |
+**A CHECKBOX is reserved for four categories** (user calibration, 2026-07-27 — a checkbox is a
+summons; issue one only when the human's answer can actually change what happens next):
+
+1. **Irreversible / destructive policy** — kill policies, data deletion, anything with a
+   catastrophic tail even if rare.
+2. **Contract or spec deviation** — the implementation deliberately departs from a settled doc,
+   or freezes a contract others build on.
+3. **Environmental / business facts only the human holds** — "is this host exclusive to us?",
+   "is that token in your password manager?", "does this policy match product intent?".
+4. **Subjective UX judgment** — "open the page and assess how it reads/feels."
+
+**Implementation-taste items get NO checkbox** — reversible choices already covered by verifier
+scrutiny (status-code semantics, type-shape choices, naming, scope-expansion under the
+fix-inconsistencies rule, deletion blast radius that tests already pin). Record these in the
+`### Design Decisions` subsection as plain entries — framed "flag only if this contradicts your
+intent," never as sign-off items awaiting a ruling.
+
+| Checkbox-worthy | NOT checkbox-worthy (record as Design Decision or omit) |
 |------------------------|--------------------------------|
 | Subjective UX/visual judgment ("does this look right?") | Code correctness (agent reads the code) |
 | Production-environment behavior the agent can't access | Running commands (agent runs them) |
-| Business logic judgment calls ("is this the right policy?") | File content verification (agent reads files) |
-| Design decisions with tradeoffs needing human sign-off | API response checking (agent curls endpoints) |
-| Cross-system integration only testable by a human | Lint, typecheck, test runs (agent executes them) |
-| User-facing workflows requiring real interaction | Static analysis of any kind |
+| Business/environmental facts only the human holds | File content verification (agent reads files) |
+| Irreversible or destructive standing policy | API response checking (agent curls endpoints) |
+| Deliberate contract/spec deviation | Lint, typecheck, test runs (agent executes them) |
+| Cross-system integration only testable by a human | Reversible implementation-taste choices verifiers already scrutinized |
 
 **If all acceptance criteria and verification items are agent-automatable → skip human validation entirely.**
 
