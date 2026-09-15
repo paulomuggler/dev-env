@@ -1,4 +1,5 @@
 {
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -8,29 +9,6 @@
             "type": "command",
             "command": "~/.claude/hooks/todo-resume.sh",
             "statusMessage": "Checking for in-progress TODO work..."
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/todo-auto-clear.sh",
-            "statusMessage": "Checking for auto-clear transition..."
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/todo-work-loop-stop.sh",
-            "statusMessage": "Checking work loop status..."
           }
         ]
       }
@@ -60,5 +38,7 @@
     }
   },
   "effortLevel": "high",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }

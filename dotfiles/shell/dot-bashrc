@@ -54,3 +54,5 @@ fi
 
 # dev-env shell integration
 source ~/.config/devenv/devenv-shell.sh
+
+. "$HOME/.local/share/../bin/env"

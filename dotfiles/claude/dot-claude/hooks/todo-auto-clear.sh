@@ -1,4 +1,16 @@
 #!/bin/bash
+# ============================================================================
+# RETIRED & UNWIRED (2026-07-25) — DO NOT REWIRE WITHOUT REVIEW.
+# This hook is no longer registered in ~/.claude/settings.json (no PostToolUse
+# entry). It belonged to the retired "auto-clear" mode: it fires only when it
+# sees `clear-pending: true` in .work-state — a sentinel the current /todo skill
+# NEVER writes (retired at SKILL.md). If that sentinel ever reappeared (a stale
+# file, an old branch, a paste) AND this hook were rewired, it would `kill` the
+# running Claude process and tmux-relaunch it. Loaded gun, unloaded chamber.
+# Kept on disk only for history; the file-based .work-state + SessionStart
+# resume (todo-resume.sh) is the current continuity model. See dev-env task
+# `todo-stop-hook-async-executor` for the full disposition.
+# ============================================================================
 # Hook: Auto-clear context between tasks in TODO work loop
 # Triggered by: PostToolUse (Write|Edit|Bash matcher)
 #

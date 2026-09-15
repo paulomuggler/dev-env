@@ -50,3 +50,7 @@ if [[ -z "${WAYLAND_DISPLAY:-}" ]] && [[ "$(tty)" == "/dev/tty1" ]]; then
     exec Hyprland
   fi
 fi
+
+. "$HOME/.local/share/../bin/env"
+
+if [ -e /home/paulomuggler/.nix-profile/etc/profile.d/nix.sh ]; then . /home/paulomuggler/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer

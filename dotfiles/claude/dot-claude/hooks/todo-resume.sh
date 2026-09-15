@@ -43,9 +43,9 @@ if [ "$PHASE" = "executing" ]; then
   done
 fi
 
-# Add verify hint if in verify phase
+# Add verify hint if in verifying phase (skill writes `phase: verifying`, not `verify`)
 VERIFY_HINT=""
-if [ "$PHASE" = "verify" ]; then
+if [ "$PHASE" = "verifying" ]; then
   VERIFY_HINT="Read the task file's ## Verify Plan section and continue checking off items."
 fi
 
@@ -92,9 +92,9 @@ DIRECTIVE="$DIRECTIVE
 
 ### Resume Instructions
 - Read \`.agents/TODO/$TASK.md\` for full task context and acceptance criteria
-- If phase is \`planning\`: continue exploring and writing the plan, then ExitPlanMode
-- If phase is \`executing\`: re-read the plan file, then continue implementing
-- If phase is \`verify\`: read the task file's Verify Plan section and continue checking off items
+- If phase is \`briefing\`: continue the brief-readiness pass, then dispatch the executor (or ExitPlanMode in --inline mode)
+- If phase is \`executing\`: re-dispatch a fresh executor with the brief (check git log for landed work), or re-read the plan and continue implementing in --inline mode
+- If phase is \`verifying\`: read the task file's Verify Plan section and continue checking off items
 - If phase is \`complete\`: write the work report, mark the task done, run lint, and commit
 
 ### Full /todo Skill Protocol

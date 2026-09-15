@@ -1,4 +1,18 @@
 #!/bin/bash
+# ============================================================================
+# RETIRED & UNWIRED (2026-07-21) — DO NOT REWIRE WITHOUT REVIEW.
+# The `Stop` hook entry was removed from ~/.claude/settings.json. This hook
+# predated dispatched execution: it treated any Stop during `phase: executing`
+# as abandonment, but under the current model the orchestrator CORRECTLY ends
+# its turn to await a subagent's completion — so it blocked ~8 times against a
+# perfectly healthy executor. It also never handled the crash case it advertised
+# (dead PID → approve), never advanced the loop between tasks, and its message
+# ("transition to verify before marking done") was dangerous on a no-diff task.
+# The file-based .work-state + SessionStart resume (todo-resume.sh) replaces it.
+# NOTE: its phase vocabulary above is also stale (`verify`/`planning`); the skill
+# writes `verifying`/`briefing`. Kept on disk for history only. See dev-env task
+# `todo-stop-hook-async-executor`.
+# ============================================================================
 # Hook: Prevent stopping when work loop is active and phases are incomplete
 # Triggered by: Stop event
 #

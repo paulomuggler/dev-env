@@ -53,3 +53,6 @@ shell-integration = detect
 
 # Use GPU rendering (default on, but explicit for clarity)
 # gtk-prefer-wayland-backend = true  # Wayland-first on Hyprland
+
+# Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
+async-backend = epoll
