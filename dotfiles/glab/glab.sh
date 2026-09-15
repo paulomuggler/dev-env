@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # GitLab CLI shell configuration
 
-# GitLab CLI shell completion
+# GitLab CLI shell completion (cached; see 00-devenv-cache.sh)
 if command -v glab >/dev/null 2>&1; then
-  eval "$(glab completion -s bash)"
+  devenv_cache_eval glab-completion glab completion -s bash
 fi
 
 # Useful aliases

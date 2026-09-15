@@ -17,10 +17,9 @@ if [[ "$(uname -s)" == "Darwin" ]] && [[ -x "/opt/homebrew/bin/brew" ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
-# rbenv (Ruby version manager)
-if command -v rbenv >/dev/null 2>&1; then
-  eval "$(rbenv init - bash)"
-fi
+# rbenv (Ruby version manager) is initialised by ~/.shell.d/rbenv.sh, which
+# caches the generated code. Doing it here as well paid for a second `rbenv init`
+# subprocess on every login shell for no added effect.
 
 # Windsurf/Codeium (macOS)
 if [[ -d "${HOME}/.codeium/windsurf/bin" ]]; then
