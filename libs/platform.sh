@@ -38,17 +38,24 @@ get_platform() {
       if [[ -f /etc/os-release ]]; then
         # shellcheck disable=SC1091
         source /etc/os-release
-        case "$ID" in
-          ubuntu|debian)
-            platform="ubuntu"
-            ;;
-          arch|manjaro)
-            platform="arch"
-            ;;
-          *)
-            platform="linux"
-            ;;
-        esac
+        # ID first, then ID_LIKE. Derivatives set their own ID and declare the
+        # base distro in ID_LIKE: Omarchy 4 ships ID=omarchy ID_LIKE=arch, and
+        # matching on ID alone dropped it to generic "linux", which took the
+        # whole pkg_* layer and every is_arch check down with it.
+        local id_candidates="${ID:-} ${ID_LIKE:-}"
+        platform="linux"
+        for id in ${id_candidates}; do
+          case "$id" in
+            ubuntu|debian)
+              platform="ubuntu"
+              break
+              ;;
+            arch|manjaro)
+              platform="arch"
+              break
+              ;;
+          esac
+        done
       else
         platform="linux"
       fi
@@ -81,9 +88,30 @@ is_supported_platform() {
 # Omarchy / Hyprland Detection
 # -----------------------------------------------------------------------------
 
-# Check if running Omarchy (Arch + Hyprland + Omarchy marker)
+# Check if running Omarchy (Arch + an Omarchy install)
+#
+# Omarchy 4 is a pacman package installed to /usr/share/omarchy and exports
+# OMARCHY_PATH from /etc/profile.d/omarchy.sh; a dev-link install points
+# OMARCHY_PATH elsewhere via /etc/omarchy.conf. Omarchy 3.x installed into
+# ~/.local/share/omarchy and had no marker beyond the directory.
 is_omarchy() {
-  is_arch && [[ -d "${HOME}/.local/share/omarchy" ]]
+  is_arch || return 1
+
+  [[ -n "${OMARCHY_PATH:-}" && -d "${OMARCHY_PATH}" ]] ||
+    [[ -d /usr/share/omarchy ]] ||
+    [[ -d "${HOME}/.local/share/omarchy" ]]
+}
+
+# Major version of the running Omarchy install, or empty when not on Omarchy.
+omarchy_version() {
+  local version_file="${OMARCHY_PATH:-/usr/share/omarchy}/version"
+  [[ -r "${version_file}" ]] && cat "${version_file}"
+}
+
+# True on Omarchy 4 or newer, which is where the Lua Hyprland config, the
+# /usr/share install prefix and the default bash integration live.
+is_omarchy4() {
+  is_omarchy && [[ -r "${OMARCHY_PATH:-/usr/share/omarchy}/default/bash/rc" ]]
 }
 
 # Check if running under Wayland
@@ -300,6 +328,8 @@ export -f is_ubuntu
 export -f is_arch
 export -f is_supported_platform
 export -f is_omarchy
+export -f is_omarchy4
+export -f omarchy_version
 export -f is_wayland
 export -f is_hyprland
 export -f get_display_server

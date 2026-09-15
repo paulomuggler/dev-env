@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # -----------------------------------------------------------------------------
 # Screenshots Installation Script
-# Installs grim (Wayland screenshot utility) and flameshot (interactive
-# screenshot tool with annotation) and configures flameshot to use grim adapter
+#
+# Omarchy 4 ships a complete capture stack of its own (omarchy-capture-*: slurp
+# region picker with keyboard window selection, editor hand-off, OCR, screen
+# recording), so there this only stows the hypr package, whose bindings.lua
+# points Ctrl+Shift+4 at that stack. Everywhere else it installs grim +
+# flameshot and configures flameshot to use the grim adapter.
 # -----------------------------------------------------------------------------
 
 set -euo pipefail  # Exit on error, undefined vars, pipe failures
@@ -23,6 +27,18 @@ install_screenshots() {
   # This script is Linux-only (grim is Wayland-specific, flameshot on Linux)
   if is_macos; then
     report_skipped "Screenshot tools are Linux-only (macOS has built-in Cmd+Shift+4)"
+    return 0
+  fi
+
+  # Omarchy has its own capture stack; a second screenshot program would only
+  # compete with it. Stow the keybinding and stop.
+  if is_omarchy; then
+    log info "Omarchy detected - using the native omarchy-capture-* stack"
+    if ! stow_package "hypr"; then
+      report_failed "Failed to apply Hyprland screenshot configuration"
+      return 1
+    fi
+    report_ok "Ctrl+Shift+4 bound to omarchy-capture-screenshot (hypr/bindings.lua)"
     return 0
   fi
 
@@ -80,24 +96,12 @@ install_screenshots() {
     return 1
   fi
 
-  # Stow hypr configuration (includes screenshot keybinding)
-  if is_hyprland || is_omarchy; then
+  # Stow hypr configuration (includes the Ctrl+Shift+4 keybinding)
+  if is_hyprland; then
     log info "Applying Hyprland screenshot keybinding (Ctrl+Shift+4)..."
     if ! stow_package "hypr"; then
       report_failed "Failed to apply Hyprland screenshot configuration"
       return 1
-    fi
-
-    # Ensure hyprland.conf sources our screenshots config
-    local hyprland_conf="${HOME}/.config/hypr/hyprland.conf"
-    local source_line='source = ~/.config/hypr/screenshots.conf'
-    if [[ -f "${hyprland_conf}" ]] && ! grep -qF "screenshots.conf" "${hyprland_conf}"; then
-      echo "" >> "${hyprland_conf}"
-      echo "# dev-env screenshot keybindings" >> "${hyprland_conf}"
-      echo "${source_line}" >> "${hyprland_conf}"
-      report_changed "Added screenshots.conf source to hyprland.conf"
-    else
-      report_ok "hyprland.conf already sources screenshots.conf"
     fi
   fi
 
