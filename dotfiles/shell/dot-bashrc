@@ -1,42 +1,81 @@
 # -----------------------------------------------------------------------------
 # .BASHRC
 #
-# Executed by interactive shells. This file configures the shell prompt,
-# tools, and sources aliases and functions.
+# Executed by interactive shells. Layering, outermost first:
+#   1. Omarchy's own bash defaults (Omarchy 4+ only, skipped elsewhere)
+#   2. dev-env's env / aliases / functions
+#   3. dev-env's per-tool configs in ~/.shell.d
+# Later layers win, which is why the dev-env pieces come last.
 # -----------------------------------------------------------------------------
 
-# Load custom environment variables (if not using .env file)
+# -----------------------------------------------------------------------------
+# OMARCHY 4 INTEGRATION
+#
+# Omarchy 4 installs to /usr/share/omarchy (3.x used ~/.local/share/omarchy and
+# had no bash integration at all, so this whole block is inert there, as it is
+# on macOS and Ubuntu).
+#
+# env-bootstrap exports OMARCHY_PATH and the mise-shim / ~/.local/bin PATH
+# entries. It has to run even for non-interactive shells, because `ssh host cmd`
+# reads .bashrc and nothing else -- that is why the interactivity check sits
+# between the two sources, exactly as Omarchy's own stock .bashrc has it.
+#
+# $OMARCHY_PATH/default/bash/rc brings aliases, functions, completions and the
+# mise / starship / zoxide / fzf initialisation. The matching ~/.shell.d files
+# detect that it already ran and skip their own init rather than paying for it
+# twice.
+# -----------------------------------------------------------------------------
+
+if [[ -r /usr/share/omarchy/default/bash/env-bootstrap ]]; then
+  source /usr/share/omarchy/default/bash/env-bootstrap
+
+  # Omarchy's contract: a non-interactive shell gets the environment, nothing else.
+  [[ $- != *i* ]] && return
+
+  source "${OMARCHY_PATH}/default/bash/rc"
+fi
+
+# -----------------------------------------------------------------------------
+# DEV-ENV
+# -----------------------------------------------------------------------------
+
+# Custom environment variables (API keys etc., not in version control)
 if [[ -f ~/.bash_env ]]; then
   source ~/.bash_env
 fi
 
-# Load custom aliases
+# Custom aliases
 if [[ -f ~/.bash_aliases ]]; then
   source ~/.bash_aliases
 fi
 
-# Load custom functions
+# Custom functions
 if [[ -f ~/.bash_functions ]]; then
   source ~/.bash_functions
 fi
 
 # -----------------------------------------------------------------------------
 # TOOL-SPECIFIC CONFIGURATIONS
-# Source all tool configs from ~/.shell.d/ directory
-# Each tool gets its own file for modular configuration
+# Source all tool configs from ~/.shell.d/ directory.
 #
 # SOURCING ORDER NOTE:
-# .shell.d/ configs are sourced AFTER .bash_aliases and .bash_functions.
-# This means tool-specific aliases/functions will override any defaults set above.
-# This is intentional - allows fallback defaults while giving tools precedence.
+# .shell.d/ configs are sourced AFTER .bash_aliases and .bash_functions, so
+# tool-specific aliases/functions override the defaults set above. That is
+# intentional: fallback defaults above, tool precedence here.
+#
+# This is the ONLY place ~/.shell.d is loaded. ~/.config/devenv/devenv-shell.sh
+# (used when a host keeps its own .bashrc and just appends a source line)
+# notices the flag below and does not load it a second time.
 # -----------------------------------------------------------------------------
 
 if [[ -d ~/.shell.d ]]; then
+  DEVENV_SHELL_D_LOADED=1
   for config in ~/.shell.d/*.sh; do
     if [[ -f "${config}" ]]; then
       source "${config}"
     fi
   done
+  unset config
 fi
 
 # Link the 'set_win_title' function to Starship's pre-command hook
@@ -52,7 +91,7 @@ if [[ "$(uname -s)" == "Darwin" ]] && [[ -f "${HOME}/.iterm2_shell_integration.b
   source "${HOME}/.iterm2_shell_integration.bash"
 fi
 
-# dev-env shell integration
-source ~/.config/devenv/devenv-shell.sh
-
-. "$HOME/.local/share/../bin/env"
+# Environment file written by the uv / astral installer, when present.
+if [[ -f "${HOME}/.local/bin/env" ]]; then
+  source "${HOME}/.local/bin/env"
+fi

@@ -1,8 +1,7 @@
 # -----------------------------------------------------------------------------
 # .BASH_PROFILE
 #
-# Executed by login shells. This file sets up the environment and then
-# sources .bashrc to configure the shell itself.
+# Executed by login shells. Sets up the environment and then sources .bashrc.
 # -----------------------------------------------------------------------------
 
 # Silence the "default interactive shell is now zsh" warning on macOS.
@@ -14,11 +13,16 @@ fi
 # ENVIRONMENT VARIABLES
 # -----------------------------------------------------------------------------
 
-# Set the default locale.
-export LANG=en_US.UTF-8
+# Default locale, only when the system has not already set one.
+# On Omarchy 4 /etc/profile.d/locale.sh owns this.
+export LANG="${LANG:-en_US.UTF-8}"
 
-# Set the terminal type. Important for colors and compatibility.
-export TERM=xterm-256color
+# Fallback terminal type. Never overwrite a real one: modern terminals announce
+# themselves (xterm-ghostty, xterm-kitty, ...) and both Omarchy's aliases and
+# the terminals' own features key off that.
+if [[ -z "${TERM:-}" ]] || [[ "${TERM}" == "dumb" ]]; then
+  export TERM=xterm-256color
+fi
 
 # -----------------------------------------------------------------------------
 # PATH CONFIGURATION
@@ -31,6 +35,23 @@ if [[ -f ~/.bash_path ]]; then
 fi
 
 # -----------------------------------------------------------------------------
+# NIX
+#
+# Multi-user Nix (the Arch `nix` package, nix-daemon.service) ships
+# /etc/profile.d/nix-daemon.sh and the login shell picks it up on its own; the
+# line below is only a safety net for shells that skip /etc/profile.d.
+# Single-user Nix (the upstream installer) has no such file, hence the fallback.
+# -----------------------------------------------------------------------------
+
+if [[ -z "${NIX_PROFILES:-}" ]]; then
+  if [[ -e /etc/profile.d/nix-daemon.sh ]]; then
+    source /etc/profile.d/nix-daemon.sh
+  elif [[ -e "${HOME}/.nix-profile/etc/profile.d/nix.sh" ]]; then
+    source "${HOME}/.nix-profile/etc/profile.d/nix.sh"
+  fi
+fi
+
+# -----------------------------------------------------------------------------
 # SOURCE .BASHRC
 #
 # Finally, load the interactive shell configuration.
@@ -39,18 +60,21 @@ if [[ -f ~/.bashrc ]]; then
   source ~/.bashrc
 fi
 
-# dev-env: Hyprland auto-start
-# Automatically start Hyprland when logging in on TTY1
-# This enables headless remote desktop operation
-if [[ -z "${WAYLAND_DISPLAY:-}" ]] && [[ "$(tty)" == "/dev/tty1" ]]; then
+# -----------------------------------------------------------------------------
+# HYPRLAND AUTO-START ON TTY1
+#
+# For headless / display-manager-less hosts only. Omarchy 4 starts the session
+# through sddm autologin, so this must not fire there: exec'ing a second
+# compositor from a tty1 login while a session is already up is how you lose the
+# tty. OMARCHY_PATH is exported by /etc/profile.d/omarchy.sh on Omarchy 4 and is
+# unset on 3.x and other platforms.
+# -----------------------------------------------------------------------------
+
+if [[ -z "${OMARCHY_PATH:-}" ]] && [[ -z "${WAYLAND_DISPLAY:-}" ]] && [[ "$(tty)" == "/dev/tty1" ]]; then
   # Use uwsm if available (Omarchy default), otherwise direct Hyprland
   if command -v uwsm &>/dev/null; then
     exec uwsm start hyprland-uwsm.desktop
-  else
+  elif command -v Hyprland &>/dev/null; then
     exec Hyprland
   fi
 fi
-
-. "$HOME/.local/share/../bin/env"
-
-if [ -e /home/paulomuggler/.nix-profile/etc/profile.d/nix.sh ]; then . /home/paulomuggler/.nix-profile/etc/profile.d/nix.sh; fi # added by Nix installer
