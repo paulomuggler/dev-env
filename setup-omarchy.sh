@@ -252,11 +252,16 @@ setup_shell() {
     log warn "Failed to stow Ghostty config"
   fi
 
-  # Add devenv-shell.sh sourcing to bashrc
+  # Hook devenv-shell.sh into ~/.bashrc, but only when ~/.bashrc is the host's
+  # own file. install-shell.sh stows dev-env's .bashrc over it, which already
+  # loads ~/.shell.d in the right order; appending here would append to a
+  # symlink and so edit the repo file itself.
   local bashrc="${HOME}/.bashrc"
   local shell_source="source ~/.config/devenv/devenv-shell.sh"
 
-  if [[ -f "${bashrc}" ]] && grep -qF "devenv-shell.sh" "${bashrc}"; then
+  if [[ -L "${bashrc}" ]] && [[ "$(readlink -f "${bashrc}")" == "${SCRIPT_DIR}"/* ]]; then
+    report_ok "~/.bashrc is dev-env's own; it loads ~/.shell.d directly"
+  elif [[ -f "${bashrc}" ]] && grep -qF "${shell_source}" "${bashrc}"; then
     report_ok "Shell integration already in .bashrc"
   else
     if dry_run_report "Would add devenv-shell.sh to .bashrc"; then
@@ -318,21 +323,32 @@ setup_headless() {
   run_phase "Phase 7: Headless Configuration" \
     "install-autologin.sh"
 
-  # Add Hyprland remote config sourcing
-  local hyprconf="${HOME}/.config/hypr/hyprland.conf"
-  local hypr_source="source = ~/.config/hypr/devenv-remote.conf"
-
-  if [[ -f "${hyprconf}" ]] && grep -qF "devenv-remote.conf" "${hyprconf}"; then
-    report_ok "Remote config already in hyprland.conf"
+  # Hook the remote/headless Hyprland config into the user's config. Omarchy 4
+  # is Lua (hyprland.lua + require), 3.x was hyprlang (hyprland.conf + source).
+  local hyprconf hypr_source marker
+  if [[ -f "${HOME}/.config/hypr/hyprland.lua" ]]; then
+    hyprconf="${HOME}/.config/hypr/hyprland.lua"
+    hypr_source='require("hypr.devenv-remote")'
+    marker="hypr.devenv-remote"
   else
-    if dry_run_report "Would add devenv-remote.conf to hyprland.conf"; then
+    hyprconf="${HOME}/.config/hypr/hyprland.conf"
+    hypr_source="source = ~/.config/hypr/devenv-remote.conf"
+    marker="devenv-remote.conf"
+  fi
+
+  if [[ ! -f "${hyprconf}" ]]; then
+    log warn "No Hyprland config at ${hyprconf}; skipping remote config hook"
+  elif grep -qF "${marker}" "${hyprconf}"; then
+    report_ok "Remote config already in $(basename "${hyprconf}")"
+  else
+    if dry_run_report "Would add ${marker} to $(basename "${hyprconf}")"; then
       :
     else
-      log info "Adding devenv-remote.conf to hyprland.conf..."
+      log info "Adding ${marker} to $(basename "${hyprconf}")..."
       echo "" >> "${hyprconf}"
       echo "# dev-env remote/headless configuration" >> "${hyprconf}"
       echo "${hypr_source}" >> "${hyprconf}"
-      report_changed "Added remote config to hyprland.conf"
+      report_changed "Added remote config to $(basename "${hyprconf}")"
     fi
   fi
 }

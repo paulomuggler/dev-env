@@ -166,28 +166,31 @@ stow_package() {
         return 1
     fi
 
-    # Check if we have any config files in the package already
-    # Look for either dot-* files (for dotfiles) or any files in .config/ (for XDG configs)
+    # Does the package already carry something stowable?
+    #
+    # Anything named dot-* (stow --dotfiles rewrites it to .*) or a literal
+    # .config tree counts, DIRECTORIES INCLUDED. Testing only for -type f
+    # missed every package whose entire payload is a dot-config/ or dot-claude/
+    # directory -- ghostty, hypr, omarchy, flameshot, sunshine, iterm2, claude --
+    # and sent them down the --adopt path, which moves the user's own files INTO
+    # the repo on top of the versions kept there.
     local has_configs=false
-    if [[ -n "$(find "${package_dir}" -name 'dot-*' -type f)" ]] || \
-       [[ -n "$(find "${package_dir}/.config" -type f 2>/dev/null)" ]]; then
+    if [[ -n "$(find "${package_dir}" -mindepth 1 \( -name 'dot-*' -o -name '.config' \) -print -quit)" ]]; then
         has_configs=true
     fi
 
     if ! ${has_configs}; then
-        # No configs in repo yet - adopt existing user configs
-        if dry_run_report "Would adopt existing configs for ${package} into repo"; then
-            return 0
-        fi
-
-        log info "No configs found for ${package}, adopting existing user configs..."
-        if (cd "${dotfiles_dir}" && stow --dotfiles --target="${HOME}" --adopt "${package}"); then
-            report_changed "Adopted existing configs for ${package}"
-            return 0
-        else
-            report_failed "Failed to adopt configs for ${package}"
-            return 1
-        fi
+        # Nothing stowable in the package, so there is nothing to do.
+        #
+        # This used to fall through to `stow --adopt`, which on a package like
+        # eza/ or ripgrep/ -- whose whole payload is a shell fragment consumed
+        # through the ~/.shell.d symlinks that live in the repo -- linked
+        # ~/eza.sh and ~/ripgrep.sh into the home directory and stood ready to
+        # pull any same-named file in $HOME into the repo on top of ours.
+        # Adopting is a deliberate bootstrap step, not a fallback for a package
+        # that was never meant to produce dotfiles.
+        report_ok "${package} has no dotfiles to stow (shell fragment only)"
+        return 0
     else
         # We have configs in repo - check if already stowed, backup if needed, then stow
         if dry_run_report "Would backup existing configs and stow ${package}"; then
@@ -259,6 +262,41 @@ stow_package() {
             if ${backed_up}; then
                 log warn "Backed up existing configs to ${backup_dir}"
             fi
+        fi
+
+        # Back up anything stow itself reports as an obstruction. The scan above
+        # only ever looked at top-level dot-* files, so a real file nested inside
+        # a package's dot-config/ tree (~/.config/ghostty/config, say) slipped
+        # past it and turned into a hard stow failure. Ask stow where the
+        # conflicts are instead of trying to predict them.
+        local -a conflicts=()
+        local conflict_line target
+        while IFS= read -r conflict_line; do
+            target="${conflict_line#*over existing target }"
+            target="${target%% since *}"
+            [[ -n "${target}" && "${target}" != "${conflict_line}" ]] && conflicts+=("${HOME}/${target}")
+        done < <(cd "${dotfiles_dir}" && stow --dotfiles --target="${HOME}" -n -v "${package}" 2>&1 | grep 'over existing target')
+
+        if (( ${#conflicts[@]} > 0 )); then
+            local conflict_backup_dir relative
+            conflict_backup_dir=$(create_backup_dir)
+            for target in "${conflicts[@]}"; do
+                [[ -e "${target}" ]] || continue
+                [[ -L "${target}" ]] && continue
+
+                # Mirror the path under $HOME instead of flattening everything
+                # into one directory, so restoring is a plain cp -a of the tree.
+                relative="${target#"${HOME}"/}"
+                mkdir -p "${conflict_backup_dir}/$(dirname "${relative}")"
+                if cp -a "${target}" "${conflict_backup_dir}/${relative}"; then
+                    rm -rf "${target}"
+                    log warn "Backed up ${target} to ${conflict_backup_dir}/${relative}"
+                else
+                    report_failed "Failed to back up ${target}; not stowing ${package}"
+                    return 1
+                fi
+            done
+            log warn "Backed up ${#conflicts[@]} conflicting path(s) to ${conflict_backup_dir}"
         fi
 
         # Stow the package (target is HOME directory)
